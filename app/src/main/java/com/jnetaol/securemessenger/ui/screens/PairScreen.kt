@@ -176,7 +176,7 @@ fun PairScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
