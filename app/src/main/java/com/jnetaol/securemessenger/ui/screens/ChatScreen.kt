@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -470,11 +472,48 @@ fun MessageBubble(message: Message) {
                 Column(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
-                    Text(
-                        message.originalContent.ifEmpty { message.content },
-                        color = textColor,
-                        fontSize = 15.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            message.originalContent.ifEmpty { message.content },
+                            color = textColor,
+                            fontSize = 15.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        if (message.isEncrypted) {
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = "Encrypted",
+                                modifier = Modifier.size(14.dp),
+                                tint = Color(0xFF4CAF50)
+                            )
+                        } else {
+                            var showError by remember { mutableStateOf(false) }
+                            Icon(
+                                Icons.Default.LockOpen,
+                                contentDescription = "Not encrypted - tap for details",
+                                modifier = Modifier.size(14.dp).clickable { showError = true },
+                                tint = Color(0xFFFF9800)
+                            )
+                            if (showError) {
+                                AlertDialog(
+                                    onDismissRequest = { showError = false },
+                                    title = { Text("Encryption Warning") },
+                                    text = {
+                                        Text(
+                                            message.encryptError.ifEmpty { "Message was not encrypted. No valid encryption key available." }
+                                        )
+                                    },
+                                    confirmButton = {
+                                        TextButton(onClick = { showError = false }) { Text("OK") }
+                                    },
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                                    textContentColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         timeFormat.format(Date(message.timestamp)),

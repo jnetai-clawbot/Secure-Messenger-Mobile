@@ -174,7 +174,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val contact = Contact(
                     id = contactId,
                     displayName = "PIN: $pin",
-                    publicKey = keyPair.publicKey,
+                    publicKey = "",
                     privateKey = keyPair.privateKey,
                     isBlocked = false,
                     isFriend = false,
@@ -274,9 +274,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     return@launch
                 }
                 val hasValidKey = contact.publicKey.isNotEmpty() && contact.publicKey.length > 20
+                var encryptError = ""
                 val content = if (hasValidKey) {
-                    try { cryptoManager.encrypt(text, contact.publicKey) } catch (_: Exception) { text }
+                    try {
+                        cryptoManager.encrypt(text, contact.publicKey)
+                    } catch (e: Exception) {
+                        encryptError = "${e.javaClass.simpleName}: ${e.message}"
+                        DebugLogger.e("MainViewModel", "sendMessage", "SM-VM-ERR-015",
+                            "Encryption failed for $contactId: $encryptError", e)
+                        text
+                    }
                 } else {
+                    encryptError = "No public key (PIN pairing without P2P key exchange)"
+                    DebugLogger.w("MainViewModel", "sendMessage", "SM-VM-WARN-001",
+                        "No valid key for $contactId, sending plaintext")
                     text
                 }
                 val message = Message(
@@ -284,10 +295,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     contactId = contactId,
                     content = content,
                     originalContent = text,
-                    isEncrypted = hasValidKey,
+                    isEncrypted = hasValidKey && encryptError.isEmpty(),
                     isFromMe = true,
                     isFile = false,
                     isRead = true,
+                    encryptError = encryptError,
                     timestamp = System.currentTimeMillis()
                 )
                 chatRepo.insertMessage(message)

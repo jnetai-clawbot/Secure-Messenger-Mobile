@@ -29,7 +29,8 @@ import com.jnetaol.securemessenger.data.model.AppSettings
 @Composable
 fun SettingsScreen(
     viewModel: MainViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToLogs: () -> Unit = {}
 ) {
     val settings by viewModel.settings.collectAsState()
     val context = LocalContext.current
@@ -342,6 +343,15 @@ fun SettingsScreen(
                         ))
                         viewModel.showToast("Colors reset to defaults")
                     }
+                )
+            }
+
+            SettingsSection("Diagnostics") {
+                SettingsItem(
+                    icon = Icons.Default.BugReport,
+                    title = "Error Logs",
+                    subtitle = "View and clear diagnostic logs",
+                    onClick = onNavigateToLogs
                 )
             }
 

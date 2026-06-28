@@ -114,11 +114,15 @@ class MainActivity : ComponentActivity() {
                                     )
                                     Screen.Settings -> SettingsScreen(
                                         viewModel = mainViewModel,
-                                        onBack = { currentScreen = Screen.Home }
+                                        onBack = { currentScreen = Screen.Home },
+                                        onNavigateToLogs = { currentScreen = Screen.Logs }
                                     )
                                     Screen.About -> AboutScreen(
                                         viewModel = mainViewModel,
                                         onBack = { currentScreen = Screen.Home }
+                                    )
+                                    Screen.Logs -> LogScreen(
+                                        onBack = { currentScreen = Screen.Settings }
                                     )
                                 }
                             }
@@ -148,5 +152,5 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    private enum class Screen { Home, Pair, Chat, Settings, About }
+    private enum class Screen { Home, Pair, Chat, Settings, About, Logs }
 }

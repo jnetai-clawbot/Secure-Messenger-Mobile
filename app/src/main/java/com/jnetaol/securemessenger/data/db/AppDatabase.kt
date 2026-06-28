@@ -8,7 +8,7 @@ import com.jnetaol.securemessenger.data.model.Contact
 import com.jnetaol.securemessenger.data.model.Message
 import com.jnetaol.securemessenger.logger.DebugLogger
 
-@Database(entities = [Contact::class, Message::class], version = 2, exportSchema = false)
+@Database(entities = [Contact::class, Message::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun contactDao(): ContactDao
     abstract fun messageDao(): MessageDao
