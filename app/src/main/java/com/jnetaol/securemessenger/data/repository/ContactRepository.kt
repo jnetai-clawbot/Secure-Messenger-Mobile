@@ -76,4 +76,14 @@ class ContactRepository(private val contactDao: ContactDao) {
             throw e
         }
     }
+
+    suspend fun updateDisplayName(contactId: String, name: String) {
+        try {
+            contactDao.updateDisplayName(contactId, name)
+            DebugLogger.i("ContactRepository", "updateDisplayName", "SM-CR-006", "Display name updated: $contactId -> $name")
+        } catch (e: Exception) {
+            DebugLogger.e("ContactRepository", "updateDisplayName", "SM-CR-ERR-008", "Failed to update display name", e)
+            throw e
+        }
+    }
 }
