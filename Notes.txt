@@ -1,0 +1,51 @@
+v1.0.3 released: https://github.com/jnetai-clawbot/Secure-Messenger-Mobile/releases
+Fixes in this update:
+- Chat crash fixed — null safety when opening contact
+- Contact rename/alias — tap menu > Rename Contact to set a custom name
+- Unread message count — red badge with number next to each contact
+- Sorted by most recent — contacts with newest messages at top
+- Last message preview — shown under contact name
+- Mark as read — messages auto-marked read when opening chat
+- Real QR scanner — CameraX + ML Kit barcode scanning (fixed from v1.0.2)
+- Real QR code display — ZXing-generated QR bitmap on Pair screen
+- Same keystore — updates without uninstall
+
+
+
+v1.0.1 released: https://github.com/jnetai-clawbot/Secure-Messenger-Mobile/releases
+Changes:
+- minSdk 26 (Android 8.0) — Samsung S8, S9, Pixel 6, Pixel 7+ all supported
+- Multi-ABI: arm64-v8a, armeabi-v7a, x86_64, x86
+- No central server — true P2P with built-in TCP/UDP networking
+- Default Google STUN: stun.l.google.com:19302, stun1.l.google.com:19302
+- Default free TURN: openrelay.metered.ca:80
+- Custom TURN settings (URL, username, password) in Settings
+- IPv4/IPv6 toggle + UDP/TCP protocol selection
+- STUN-based NAT traversal for public address discovery
+- Same keystore — updates without uninstall
+
+
+
+
+
+Secure Mobile Messenger v1.0.0 is built and released.
+- Release: https://github.com/jnetai-clawbot/Secure-Messenger-Mobile/releases
+- APK: Secure Mobile Messenger.apk (~3MB)
+- Repo: https://github.com/jnetai-clawbot/Secure-Messenger-Mobile
+What's included:
+- P2P pairing via QR code & 6-digit PIN with regenerate button
+- Per-contact RSA-2048 + AES-256-GCM encryption (unique keys per contact)
+- 1-to-1 encrypted chat with file sharing, nudge, block, end chat, clear history
+- Settings: network, chat, storage location, themes (dark/light + custom colors)
+- About section with "Made by jnetai.com", version, update check, share
+- Room database, DataStore preferences, persistent DebugLogger with error codes
+- GitHub Actions CI/CD with same keystore for updates
+
+
+
+
+
+
+
+
+

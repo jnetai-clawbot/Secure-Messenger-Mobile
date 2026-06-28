@@ -20,26 +20,26 @@ import java.util.concurrent.Executors
 
 class QRScannerActivity : ComponentActivity() {
 
-    private var previewView: PreviewView? = null
+    private lateinit var previewView: PreviewView
     private var scanned = false
-
     private val cameraExecutor = Executors.newSingleThreadExecutor()
-
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            startCamera()
-        } else {
-            DebugLogger.w("QRScannerActivity", "permission", "SM-QRS-WARN-001", "Camera permission denied")
-            Toast.makeText(this, "Camera permission required for QR scanning", Toast.LENGTH_LONG).show()
-            finishWithResult(null)
-        }
-    }
+    private lateinit var requestPermissionLauncher: androidx.activity.result.ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         DebugLogger.d("QRScannerActivity", "onCreate", "SM-QRS-001")
+
+        requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { granted ->
+            if (granted) {
+                startCamera()
+            } else {
+                DebugLogger.w("QRScannerActivity", "permission", "SM-QRS-WARN-001", "Camera permission denied")
+                Toast.makeText(this, "Camera permission required for QR scanning", Toast.LENGTH_LONG).show()
+                finishWithResult(null)
+            }
+        }
 
         previewView = PreviewView(this).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -67,21 +67,19 @@ class QRScannerActivity : ComponentActivity() {
                 val preview = Preview.Builder()
                     .setTargetResolution(Size(1280, 720))
                     .build()
-                preview.setSurfaceProvider(previewView!!.surfaceProvider)
+                preview.setSurfaceProvider(previewView.surfaceProvider)
 
                 val imageAnalysis = ImageAnalysis.Builder()
                     .setTargetResolution(Size(1280, 720))
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
-                    .also { analysis ->
-                        analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                            if (!scanned) {
-                                scanQRCode(imageProxy)
-                            } else {
-                                imageProxy.close()
-                            }
-                        }
+                imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                    if (!scanned) {
+                        scanQRCode(imageProxy)
+                    } else {
+                        imageProxy.close()
                     }
+                }
 
                 val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
                 cameraProvider.unbindAll()
