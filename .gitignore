@@ -13,3 +13,4 @@ local.properties
 !apk/.gitkeep
 *.jks
 *.keystore
+Notes.txt
