@@ -133,17 +133,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun selectContact(contactId: String) {
         DebugLogger.d("MainViewModel", "selectContact", "SM-VM-001", "Selecting contact: $contactId")
         _selectedContactId.value = contactId
-        val existing = contactsWithMeta.value.find { it.contact.id == contactId }?.contact
-        if (existing != null) {
-            _currentContactDirect.value = existing
-        }
         viewModelScope.launch {
             try {
+                chatRepo.markAllRead(contactId)
                 val contact = contactRepo.getContactByIdSync(contactId)
                 if (contact != null) {
                     _currentContactDirect.value = contact
                 }
-                chatRepo.markAllRead(contactId)
             } catch (e: Exception) {
                 DebugLogger.e("MainViewModel", "selectContact", "SM-VM-ERR-013", "Failed to mark read", e)
             }
