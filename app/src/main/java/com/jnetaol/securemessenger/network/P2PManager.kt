@@ -149,8 +149,8 @@ class P2PManager(
                 var line: String?
                 while (reader.readLine().also { line = it } != null) {
                     val msg = line ?: break
-                    if (msg.startsWith("SM_MSG:")) {
-                        val payload = msg.removePrefix("SM_MSG:")
+                    if (msg.startsWith("SM_MSG:") || msg.startsWith("SM_PAIR|")) {
+                        val payload = if (msg.startsWith("SM_MSG:")) msg.removePrefix("SM_MSG:") else msg
                         onMessageReceived(peerId, payload.toByteArray(Charsets.UTF_8))
                     } else if (msg == "SM_P2P_BYE") {
                         break
@@ -185,13 +185,7 @@ class P2PManager(
 
     suspend fun connectToPeer(peerId: String, address: String, port: Int): Boolean {
         return try {
-            val useUDP = settings.useUDP && !settings.preferTCP
-            if (useUDP) {
-                connectUDP(peerId, address, port)
-                true
-            } else {
-                connectTCP(peerId, address, port)
-            }
+            connectTCP(peerId, address, port)
         } catch (e: Exception) {
             DebugLogger.e("P2PManager", "connectToPeer", "SM-P2P-ERR-005", "Connection failed", e)
             onConnectionFailed(peerId, e.message ?: "Unknown error")
@@ -220,8 +214,8 @@ class P2PManager(
                         var line: String?
                         while (reader.readLine().also { line = it } != null) {
                             val msg = line ?: break
-                            if (msg.startsWith("SM_MSG:")) {
-                                val payload = msg.removePrefix("SM_MSG:")
+                            if (msg.startsWith("SM_MSG:") || msg.startsWith("SM_PAIR|")) {
+                                val payload = if (msg.startsWith("SM_MSG:")) msg.removePrefix("SM_MSG:") else msg
                                 onMessageReceived(peerId, payload.toByteArray(Charsets.UTF_8))
                             } else if (msg == "SM_P2P_BYE") break
                         }

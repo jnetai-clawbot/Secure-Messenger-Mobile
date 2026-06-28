@@ -93,8 +93,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             else {
                 val flows = contacts.map { contact ->
                     combine(
-                        chatRepo.getLastMessage(contact.id),
-                        chatRepo.getUnreadCount(contact.id)
+                        chatRepo.getLastMessage(contact.id).catch { emit(null) },
+                        chatRepo.getUnreadCount(contact.id).catch { emit(0) }
                     ) { lastMsg, unread ->
                         ContactWithMeta(
                             contact = contact,
@@ -110,6 +110,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         .map { list -> list.sortedByDescending { it.lastMessageTime } }
+        .catch { emit(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val messages: StateFlow<List<Message>> = _selectedContactId
