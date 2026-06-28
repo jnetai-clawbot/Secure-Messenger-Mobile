@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Environment
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -35,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.google.zxing.*
+import com.google.zxing.common.HybridBinarizer
 import com.jnetaol.securemessenger.MainViewModel
 import com.jnetaol.securemessenger.pairing.QRCodeGenerator
 import com.jnetaol.securemessenger.pairing.QRScannerActivity
@@ -81,6 +84,37 @@ fun PairScreen(
             }
         } else if (!qrResult.isNullOrEmpty()) {
             viewModel.showToast("Not a valid Secure Messenger QR code")
+        }
+    }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
+                if (bitmap != null) {
+                    scanQRFromBitmap(context, bitmap) { result ->
+                        if (result != null && result.startsWith("SM|")) {
+                            val parts = result.split("|")
+                            if (parts.size >= 3) {
+                                viewModel.pairWithQr(result, parts[2])
+                                onBack()
+                            } else {
+                                viewModel.showToast("Invalid QR code format")
+                            }
+                        } else {
+                            viewModel.showToast("No valid QR code found in image")
+                        }
+                    }
+                } else {
+                    viewModel.showToast("Could not read image file")
+                }
+            } catch (e: Exception) {
+                viewModel.showToast("Error reading image: ${e.message}")
+            }
         }
     }
 
@@ -343,6 +377,24 @@ fun PairScreen(
                 Text("Scan QR Code")
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = {
+                    try {
+                        imagePickerLauncher.launch("image/*")
+                    } catch (e: Exception) {
+                        viewModel.showToast("Error: ${e.message}")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.Image, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Select QR Image")
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
@@ -447,4 +499,25 @@ private fun copyToClipboard(context: Context, pin: String) {
     val clip = ClipData.newPlainText("Secure Messenger PIN", pin)
     clipboard.setPrimaryClip(clip)
     Toast.makeText(context, "PIN copied to clipboard", Toast.LENGTH_SHORT).show()
+}
+
+private fun scanQRFromBitmap(context: Context, bitmap: Bitmap, callback: (String?) -> Unit) {
+    Thread {
+        try {
+            val width = bitmap.width
+            val height = bitmap.height
+            val pixels = IntArray(width * height)
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+            val source = RGBLuminanceSource(width, height, pixels)
+            val binaryBitmap = com.google.zxing.BinaryBitmap(HybridBinarizer(source))
+            val reader = MultiFormatReader()
+            val result = reader.decode(binaryBitmap)
+            val text = result.text
+            android.os.Handler(context.mainLooper).post { callback(text) }
+        } catch (e: NotFoundException) {
+            android.os.Handler(context.mainLooper).post { callback(null) }
+        } catch (e: Exception) {
+            android.os.Handler(context.mainLooper).post { callback(null) }
+        }
+    }.start()
 }

@@ -10,37 +10,26 @@ class IdentityManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("identity_prefs", Context.MODE_PRIVATE)
     private val secureRandom = SecureRandom()
 
+    private var cachedId: String? = null
+    private var cachedPin: String? = null
+
     init {
         DebugLogger.i("IdentityManager", "init", "SM-IM-001", "IdentityManager initialized")
+        cachedId = prefs.getString("identity_id", null)
+        cachedPin = prefs.getString("pin_code", null)
+        if (cachedId == null || cachedPin == null) {
+            generateNewIdentity()
+        }
     }
 
     val identityId: String
-        get() {
-            val id = prefs.getString("identity_id", null)
-            if (id == null) {
-                DebugLogger.w("IdentityManager", "identityId", "SM-IM-WARN-001", "No identity found, generating new one")
-                return generateNewIdentity()
-            }
-            return id
-        }
+        get() = cachedId ?: ""
 
     val qrCodeData: String
-        get() {
-            val id = identityId
-            val pin = pinCode
-            return "SM|$id|$pin"
-        }
+        get() = "SM|${cachedId ?: ""}|${cachedPin ?: ""}"
 
     val pinCode: String
-        get() {
-            val pin = prefs.getString("pin_code", null)
-            if (pin == null) {
-                DebugLogger.w("IdentityManager", "pinCode", "SM-IM-WARN-002", "No PIN found, generating new one")
-                generateNewIdentity()
-                return prefs.getString("pin_code", "") ?: ""
-            }
-            return pin
-        }
+        get() = cachedPin ?: ""
 
     fun regenerateIdentity() {
         DebugLogger.i("IdentityManager", "regenerateIdentity", "SM-IM-002", "Regenerating identity")
@@ -51,6 +40,8 @@ class IdentityManager(context: Context) {
         return try {
             val newId = UUID.randomUUID().toString()
             val newPin = generatePin()
+            cachedId = newId
+            cachedPin = newPin
             prefs.edit()
                 .putString("identity_id", newId)
                 .putString("pin_code", newPin)

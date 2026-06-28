@@ -6,13 +6,15 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.jnetaol.securemessenger.logger.DebugLogger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.EnumMap
 
 object QRCodeGenerator {
-    private const val QR_SIZE = 512
+    private const val QR_SIZE = 256
 
-    fun generateQRCode(data: String): Bitmap? {
-        return try {
+    suspend fun generateQRCode(data: String): Bitmap? = withContext(Dispatchers.Default) {
+        try {
             DebugLogger.d("QRCodeGenerator", "generateQRCode", "SM-QR-001", "Generating QR for: ${data.take(20)}...")
             val hints = EnumMap<EncodeHintType, Any>(EncodeHintType::class.java)
             hints[EncodeHintType.ERROR_CORRECTION] = ErrorCorrectionLevel.M
@@ -22,12 +24,15 @@ object QRCodeGenerator {
             val writer = QRCodeWriter()
             val bitMatrix = writer.encode(data, BarcodeFormat.QR_CODE, QR_SIZE, QR_SIZE, hints)
 
-            val bitmap = Bitmap.createBitmap(QR_SIZE, QR_SIZE, Bitmap.Config.ARGB_8888)
-            for (x in 0 until QR_SIZE) {
-                for (y in 0 until QR_SIZE) {
-                    bitmap.setPixel(x, y, if (bitMatrix[x, y]) 0xFF000000.toInt() else 0xFFFFFFFF.toInt())
+            val pixels = IntArray(QR_SIZE * QR_SIZE)
+            for (y in 0 until QR_SIZE) {
+                val rowOffset = y * QR_SIZE
+                for (x in 0 until QR_SIZE) {
+                    pixels[rowOffset + x] = if (bitMatrix[x, y]) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
                 }
             }
+            val bitmap = Bitmap.createBitmap(QR_SIZE, QR_SIZE, Bitmap.Config.ARGB_8888)
+            bitmap.setPixels(pixels, 0, QR_SIZE, 0, 0, QR_SIZE, QR_SIZE)
             DebugLogger.i("QRCodeGenerator", "generateQRCode", "SM-QR-002", "QR code generated successfully")
             bitmap
         } catch (e: Exception) {
