@@ -11,6 +11,7 @@ import com.jnetaol.securemessenger.data.model.Message
 import com.jnetaol.securemessenger.logger.DebugLogger
 import com.jnetaol.securemessenger.pairing.QRCodeGenerator
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,7 +42,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshQRCode() {
         viewModelScope.launch {
             try {
-                val data = identityManager.qrCodeData
+                val p2p = app.p2pManager
+                val localIp = getLocalIpAddress()
+                val port = p2p?.getLocalPort() ?: 0
+                val data = if (port > 0) {
+                    identityManager.getQRDataWithP2P(localIp, port)
+                } else {
+                    identityManager.qrCodeData
+                }
                 val bitmap = withContext(Dispatchers.Default) {
                     QRCodeGenerator.generateQRCode(data)
                 }
@@ -49,6 +57,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 DebugLogger.e("MainViewModel", "refreshQRCode", "SM-VM-ERR-015", "QR gen failed", e)
             }
+        }
+    }
+
+    private fun getLocalIpAddress(): String {
+        return try {
+            val interfaces = java.net.NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                val addresses = iface.inetAddresses
+                while (addresses.hasMoreElements()) {
+                    val addr = addresses.nextElement()
+                    if (!addr.isLoopbackAddress && addr is java.net.Inet4Address) {
+                        return addr.hostAddress ?: "127.0.0.1"
+                    }
+                }
+            }
+            "127.0.0.1"
+        } catch (e: Exception) {
+            "127.0.0.1"
         }
     }
 
@@ -153,21 +180,42 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 DebugLogger.d("MainViewModel", "pairWithQr", "SM-VM-005", "Pairing with QR: $qrData")
-                val contactId = UUID.randomUUID().toString()
+                val parts = qrData.split("|")
+                val peerId = parts.getOrNull(1) ?: UUID.randomUUID().toString()
+                val peerPin = parts.getOrNull(2) ?: pin
+                val p2pAddr = parts.getOrNull(3) ?: ""
+
                 val keyPair = cryptoManager.generateKeyPair()
-                val displayName = if (pin.isNotEmpty()) "PIN: $pin" else "QR Contact"
+                val displayName = if (peerPin.isNotEmpty()) "PIN: $peerPin" else "QR Contact"
                 val contact = Contact(
-                    id = contactId,
+                    id = peerId,
                     displayName = displayName,
-                    publicKey = keyPair.publicKey,
+                    publicKey = "",
                     privateKey = keyPair.privateKey,
                     isBlocked = false,
                     isFriend = false,
                     createdAt = System.currentTimeMillis()
                 )
                 contactRepo.insertContact(contact)
+
+                if (p2pAddr.isNotEmpty()) {
+                    val addrParts = p2pAddr.split(":")
+                    val host = addrParts[0]
+                    val port = addrParts.getOrNull(1)?.toIntOrNull() ?: 0
+                    if (port > 0) {
+                        app.p2pManager?.connectToPeer(peerId, host, port)
+                        delay(500)
+                        val myId = identityManager.identityId
+                        val myPin = identityManager.pinCode
+                        val myKey = keyPair.publicKey
+                        val pairMsg = "SM_PAIR|$myId|$myPin|$myKey"
+                        app.p2pManager?.sendMessage(peerId, pairMsg.toByteArray(Charsets.UTF_8))
+                        DebugLogger.i("MainViewModel", "pairWithQr", "SM-VM-019", "Pairing request sent to $peerId")
+                    }
+                }
+
                 _toastMessage.emit("Pairing successful - you can now message this contact")
-                DebugLogger.i("MainViewModel", "pairWithQr", "SM-VM-006", "QR pairing successful: $contactId")
+                DebugLogger.i("MainViewModel", "pairWithQr", "SM-VM-006", "QR pairing successful: $peerId")
             } catch (e: Exception) {
                 DebugLogger.e("MainViewModel", "pairWithQr", "SM-VM-ERR-003", "QR pairing failed", e)
                 _toastMessage.emit("Pairing failed: ${e.message}")

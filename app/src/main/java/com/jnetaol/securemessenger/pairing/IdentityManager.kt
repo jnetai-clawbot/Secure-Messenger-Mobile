@@ -26,7 +26,17 @@ class IdentityManager(context: Context) {
         get() = cachedId ?: ""
 
     val qrCodeData: String
-        get() = "SM|${cachedId ?: ""}|${cachedPin ?: ""}"
+        get() {
+            val id = cachedId ?: ""
+            val pin = cachedPin ?: ""
+            return "SM|$id|$pin"
+        }
+
+    fun getQRDataWithP2P(ip: String, port: Int): String {
+        val id = cachedId ?: ""
+        val pin = cachedPin ?: ""
+        return "SM|$id|$pin|$ip:$port"
+    }
 
     val pinCode: String
         get() = cachedPin ?: ""

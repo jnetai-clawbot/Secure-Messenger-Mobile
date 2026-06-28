@@ -28,6 +28,9 @@ interface ContactDao {
     @Query("UPDATE contacts SET displayName = :name WHERE id = :contactId")
     suspend fun updateDisplayName(contactId: String, name: String)
 
+    @Query("UPDATE contacts SET publicKey = :publicKey WHERE id = :contactId")
+    suspend fun updatePublicKey(contactId: String, publicKey: String)
+
     @Delete
     suspend fun deleteContact(contact: Contact)
 

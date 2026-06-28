@@ -86,4 +86,14 @@ class ContactRepository(private val contactDao: ContactDao) {
             throw e
         }
     }
+
+    suspend fun updatePublicKey(contactId: String, publicKey: String) {
+        try {
+            contactDao.updatePublicKey(contactId, publicKey)
+            DebugLogger.i("ContactRepository", "updatePublicKey", "SM-CR-007", "Public key updated: $contactId")
+        } catch (e: Exception) {
+            DebugLogger.e("ContactRepository", "updatePublicKey", "SM-CR-ERR-009", "Failed to update public key", e)
+            throw e
+        }
+    }
 }
