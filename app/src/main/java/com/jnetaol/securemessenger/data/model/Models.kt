@@ -26,7 +26,15 @@ data class Message(
     val isNudge: Boolean = false,
     val fileName: String? = null,
     val fileSize: Long? = null,
+    val isRead: Boolean = false,
     val timestamp: Long = System.currentTimeMillis()
+)
+
+data class ContactWithMeta(
+    val contact: Contact,
+    val lastMessage: String = "",
+    val lastMessageTime: Long = 0,
+    val unreadCount: Int = 0
 )
 
 data class AppSettings(

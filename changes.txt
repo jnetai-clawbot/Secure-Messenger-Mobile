@@ -1,6 +1,20 @@
 Secure Mobile Messenger - Changes Log
 =====================================
 
+v1.0.3 - Contact Management & Chat Fixes (2026-06-28)
+------------------------------------------------------
+- Fixed crash when opening contact chat (null safety)
+- Added contact rename/alias functionality (Edit in chat menu)
+- Added unread message count badge per contact (red circle with count)
+- Contacts sorted by most recent message at top
+- Last message preview shown under contact name
+- Messages marked as read when opening chat
+- Added isRead field to Message model
+- Added ContactWithMeta data class for enriched contact list
+- Added getUnreadCount, markAllRead, getLastMessageSync DAO queries
+- Database version bumped to 2 (destructive migration for schema change)
+- Fixed CameraX surfaceProvider API compatibility
+
 v1.0.2 - Real QR Code & Scanner (2026-06-28)
 ---------------------------------------------
 - Replaced placeholder QR icon with real QR code bitmap generated via ZXing

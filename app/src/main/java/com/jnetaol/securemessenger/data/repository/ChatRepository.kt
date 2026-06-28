@@ -51,4 +51,30 @@ class ChatRepository(
             throw e
         }
     }
+
+    fun getUnreadCount(contactId: String): Flow<Int> {
+        return try {
+            messageDao.getUnreadCount(contactId)
+        } catch (e: Exception) {
+            DebugLogger.e("ChatRepository", "getUnreadCount", "SM-CH-ERR-005", "Failed to get unread count", e)
+            throw e
+        }
+    }
+
+    suspend fun markAllRead(contactId: String) {
+        try {
+            messageDao.markAllRead(contactId)
+        } catch (e: Exception) {
+            DebugLogger.e("ChatRepository", "markAllRead", "SM-CH-ERR-006", "Failed to mark read", e)
+        }
+    }
+
+    suspend fun getLastMessageSync(contactId: String): Message? {
+        return try {
+            messageDao.getLastMessageSync(contactId)
+        } catch (e: Exception) {
+            DebugLogger.e("ChatRepository", "getLastMessageSync", "SM-CH-ERR-007", "Failed to get last message sync", e)
+            null
+        }
+    }
 }

@@ -42,7 +42,9 @@ fun ChatScreen(
     var showBlockDialog by remember { mutableStateOf(false) }
     var showEndChatDialog by remember { mutableStateOf(false) }
     var showClearDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    var renameText by remember { mutableStateOf("") }
     val context = LocalContext.current
 
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -131,6 +133,36 @@ fun ChatScreen(
         )
     }
 
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Rename Contact") },
+            text = {
+                OutlinedTextField(
+                    value = renameText,
+                    onValueChange = { renameText = it },
+                    label = { Text("Contact Name / Alias") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (renameText.isNotBlank()) {
+                        contact?.let { viewModel.renameContact(it.id, renameText.trim()) }
+                    }
+                    showRenameDialog = false
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) { Text("Cancel") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -180,6 +212,15 @@ fun ChatScreen(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
+                            DropdownMenuItem(
+                                text = { Text("Rename Contact") },
+                                onClick = {
+                                    renameText = contact?.displayName ?: ""
+                                    showMenu = false
+                                    showRenameDialog = true
+                                },
+                                leadingIcon = { Icon(Icons.Default.Edit, null) }
+                            )
                             DropdownMenuItem(
                                 text = { Text("Add Friend") },
                                 onClick = {

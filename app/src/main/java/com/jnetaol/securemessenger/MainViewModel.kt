@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jnetaol.securemessenger.crypto.CryptoManager
 import com.jnetaol.securemessenger.data.model.Contact
+import com.jnetaol.securemessenger.data.model.ContactWithMeta
 import com.jnetaol.securemessenger.data.model.Message
 import com.jnetaol.securemessenger.logger.DebugLogger
 import kotlinx.coroutines.flow.*
@@ -26,7 +27,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedContactId = MutableStateFlow<String?>(null)
     val selectedContactId: StateFlow<String?> = _selectedContactId
 
-    val contacts: StateFlow<List<Contact>> = contactRepo.getAllContacts()
+    val contactsWithMeta: StateFlow<List<ContactWithMeta>> = contactRepo.getAllContacts()
+        .flatMapLatest { contacts ->
+            if (contacts.isEmpty()) flowOf(emptyList())
+            else {
+                val flows = contacts.map { contact ->
+                    combine(
+                        chatRepo.getLastMessage(contact.id),
+                        chatRepo.getUnreadCount(contact.id)
+                    ) { lastMsg, unread ->
+                        ContactWithMeta(
+                            contact = contact,
+                            lastMessage = lastMsg?.let {
+                                if (it.isNudge) "Nudge!" else it.originalContent.ifEmpty { it.content }
+                            } ?: "",
+                            lastMessageTime = lastMsg?.timestamp ?: contact.createdAt,
+                            unreadCount = unread
+                        )
+                    }
+                }
+                combine(flows) { it.toList() }
+            }
+        }
+        .map { list -> list.sortedByDescending { it.lastMessageTime } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val messages: StateFlow<List<Message>> = _selectedContactId
@@ -49,6 +72,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun selectContact(contactId: String) {
         DebugLogger.d("MainViewModel", "selectContact", "SM-VM-001", "Selecting contact: $contactId")
         _selectedContactId.value = contactId
+        viewModelScope.launch {
+            try {
+                chatRepo.markAllRead(contactId)
+            } catch (e: Exception) {
+                DebugLogger.e("MainViewModel", "selectContact", "SM-VM-ERR-013", "Failed to mark read", e)
+            }
+        }
     }
 
     fun clearSelectedContact() {
@@ -76,7 +106,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val keyPair = cryptoManager.generateKeyPair()
                 val contact = Contact(
                     id = contactId,
-                    displayName = "Contact $pin",
+                    displayName = "PIN: $pin",
                     publicKey = keyPair.publicKey,
                     privateKey = keyPair.privateKey,
                     isBlocked = false,
@@ -84,7 +114,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     createdAt = System.currentTimeMillis()
                 )
                 contactRepo.insertContact(contact)
-                _toastMessage.emit("Pairing successful")
+                _toastMessage.emit("Pairing successful - you can now message this contact")
                 DebugLogger.i("MainViewModel", "pairWithPin", "SM-VM-004", "Pairing successful: $contactId")
             } catch (e: Exception) {
                 DebugLogger.e("MainViewModel", "pairWithPin", "SM-VM-ERR-002", "Pairing failed", e)
@@ -99,7 +129,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 DebugLogger.d("MainViewModel", "pairWithQr", "SM-VM-005", "Pairing with QR: $qrData")
                 val contactId = UUID.randomUUID().toString()
                 val keyPair = cryptoManager.generateKeyPair()
-                val displayName = if (pin.isNotEmpty()) "Contact $pin" else "QR Contact"
+                val displayName = if (pin.isNotEmpty()) "PIN: $pin" else "QR Contact"
                 val contact = Contact(
                     id = contactId,
                     displayName = displayName,
@@ -110,11 +140,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     createdAt = System.currentTimeMillis()
                 )
                 contactRepo.insertContact(contact)
-                _toastMessage.emit("Pairing successful")
+                _toastMessage.emit("Pairing successful - you can now message this contact")
                 DebugLogger.i("MainViewModel", "pairWithQr", "SM-VM-006", "QR pairing successful: $contactId")
             } catch (e: Exception) {
                 DebugLogger.e("MainViewModel", "pairWithQr", "SM-VM-ERR-003", "QR pairing failed", e)
                 _toastMessage.emit("Pairing failed: ${e.message}")
+            }
+        }
+    }
+
+    fun renameContact(contactId: String, newName: String) {
+        viewModelScope.launch {
+            try {
+                contactRepo.updateDisplayName(contactId, newName)
+                _toastMessage.emit("Contact renamed")
+                DebugLogger.i("MainViewModel", "renameContact", "SM-VM-018", "Contact renamed: $contactId -> $newName")
+            } catch (e: Exception) {
+                DebugLogger.e("MainViewModel", "renameContact", "SM-VM-ERR-014", "Failed to rename", e)
+                _toastMessage.emit("Error: ${e.message}")
             }
         }
     }
@@ -150,6 +193,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     isEncrypted = true,
                     isFromMe = true,
                     isFile = false,
+                    isRead = true,
                     timestamp = System.currentTimeMillis()
                 )
                 chatRepo.insertMessage(message)
@@ -185,6 +229,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     isFile = true,
                     fileName = file.name,
                     fileSize = file.length(),
+                    isRead = true,
                     timestamp = System.currentTimeMillis()
                 )
                 chatRepo.insertMessage(message)
@@ -209,6 +254,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     isFromMe = true,
                     isFile = false,
                     isNudge = true,
+                    isRead = true,
                     timestamp = System.currentTimeMillis()
                 )
                 chatRepo.insertMessage(message)

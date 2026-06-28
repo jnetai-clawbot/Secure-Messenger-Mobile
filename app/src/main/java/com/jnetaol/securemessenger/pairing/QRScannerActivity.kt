@@ -67,7 +67,7 @@ class QRScannerActivity : ComponentActivity() {
                 val preview = Preview.Builder()
                     .setTargetResolution(Size(1280, 720))
                     .build()
-                    .also { it.surfaceProvider = previewView!!.surfaceProvider }
+                preview.setSurfaceProvider(previewView!!.surfaceProvider)
 
                 val imageAnalysis = ImageAnalysis.Builder()
                     .setTargetResolution(Size(1280, 720))

@@ -19,7 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jnetaol.securemessenger.MainViewModel
-import com.jnetaol.securemessenger.data.model.Contact
+import com.jnetaol.securemessenger.data.model.ContactWithMeta
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -32,7 +32,7 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToAbout: () -> Unit
 ) {
-    val contacts by viewModel.contacts.collectAsState()
+    val contactsWithMeta by viewModel.contactsWithMeta.collectAsState()
     val identityManager = viewModel.identityManager
 
     Scaffold(
@@ -113,7 +113,7 @@ fun HomeScreen(
                 }
             }
 
-            if (contacts.isEmpty()) {
+            if (contactsWithMeta.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -145,7 +145,7 @@ fun HomeScreen(
                 }
             } else {
                 Text(
-                    "Contacts",
+                    "Chats",
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
@@ -155,10 +155,10 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    items(contacts, key = { it.id }) { contact ->
+                    items(contactsWithMeta, key = { it.contact.id }) { item ->
                         ContactItem(
-                            contact = contact,
-                            onClick = { onNavigateToChat(contact.id) }
+                            item = item,
+                            onClick = { onNavigateToChat(item.contact.id) }
                         )
                     }
                 }
@@ -169,10 +169,16 @@ fun HomeScreen(
 
 @Composable
 fun ContactItem(
-    contact: Contact,
+    item: ContactWithMeta,
     onClick: () -> Unit
 ) {
+    val contact = item.contact
     val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
+    val timeText = if (item.lastMessageTime > 0) {
+        dateFormat.format(Date(item.lastMessageTime))
+    } else {
+        dateFormat.format(Date(contact.createdAt))
+    }
 
     Card(
         modifier = Modifier
@@ -233,19 +239,48 @@ fun ContactItem(
                     }
                 }
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    "ID: ${contact.id.take(8)}...",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (item.lastMessage.isNotEmpty()) {
+                    Text(
+                        item.lastMessage,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    Text(
+                        "Tap to start chatting",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
-            Text(
-                dateFormat.format(Date(contact.createdAt)),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    timeText,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                )
+                if (item.unreadCount > 0) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            if (item.unreadCount > 99) "99+" else "${item.unreadCount}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -48,6 +48,15 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE timestamp < :beforeTimestamp")
     suspend fun deleteOldMessages(beforeTimestamp: Long)
+
+    @Query("SELECT COUNT(*) FROM messages WHERE contactId = :contactId AND isFromMe = 0 AND isRead = 0")
+    fun getUnreadCount(contactId: String): Flow<Int>
+
+    @Query("UPDATE messages SET isRead = 1 WHERE contactId = :contactId AND isFromMe = 0 AND isRead = 0")
+    suspend fun markAllRead(contactId: String)
+
+    @Query("SELECT * FROM messages WHERE contactId = :contactId ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLastMessageSync(contactId: String): Message?
 }
 
 @Dao
