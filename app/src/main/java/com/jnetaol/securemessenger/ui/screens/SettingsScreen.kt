@@ -203,6 +203,15 @@ fun SettingsScreen(
                     }
                 )
                 SettingsToggle(
+                    icon = Icons.Default.NoEncryption,
+                    title = "Block Unencrypted Messages",
+                    subtitle = "Prevent sending when encryption fails",
+                    checked = settings.blockUnencrypted,
+                    onCheckedChange = {
+                        viewModel.updateSettings(settings.copy(blockUnencrypted = it))
+                    }
+                )
+                SettingsToggle(
                     icon = Icons.Default.FileDownload,
                     title = "Auto-accept Files",
                     checked = settings.autoAcceptFiles,
@@ -438,7 +447,8 @@ fun SettingsToggle(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    subtitle: String = ""
 ) {
     Row(
         modifier = Modifier
@@ -453,12 +463,20 @@ fun SettingsToggle(
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
         Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            title,
-            fontSize = 15.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                title,
+                fontSize = 15.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (subtitle.isNotEmpty()) {
+                Text(
+                    subtitle,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
+        }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,

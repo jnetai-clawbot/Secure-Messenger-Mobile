@@ -35,6 +35,7 @@ class SettingsRepository(context: Context) {
                 useUDP = prefs.getBoolean("use_udp", true),
                 localPort = prefs.getInt("local_port", 0),
                 encryptionEnabled = prefs.getBoolean("encryption_enabled", true),
+                blockUnencrypted = prefs.getBoolean("block_unencrypted", false),
                 autoAcceptFiles = prefs.getBoolean("auto_accept_files", false),
                 notificationsEnabled = prefs.getBoolean("notifications_enabled", true),
                 soundEnabled = prefs.getBoolean("sound_enabled", true),
@@ -70,6 +71,7 @@ class SettingsRepository(context: Context) {
                 .putBoolean("use_udp", newSettings.useUDP)
                 .putInt("local_port", newSettings.localPort)
                 .putBoolean("encryption_enabled", newSettings.encryptionEnabled)
+                .putBoolean("block_unencrypted", newSettings.blockUnencrypted)
                 .putBoolean("auto_accept_files", newSettings.autoAcceptFiles)
                 .putBoolean("notifications_enabled", newSettings.notificationsEnabled)
                 .putBoolean("sound_enabled", newSettings.soundEnabled)

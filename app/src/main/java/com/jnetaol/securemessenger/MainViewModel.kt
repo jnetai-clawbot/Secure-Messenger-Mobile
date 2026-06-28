@@ -275,27 +275,39 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val hasValidKey = contact.publicKey.isNotEmpty() && contact.publicKey.length > 20
                 var encryptError = ""
+                var actuallyEncrypted = false
                 val content = if (hasValidKey) {
-                    try {
-                        cryptoManager.encrypt(text, contact.publicKey)
-                    } catch (e: Exception) {
-                        encryptError = "${e.javaClass.simpleName}: ${e.message}"
-                        DebugLogger.e("MainViewModel", "sendMessage", "SM-VM-ERR-015",
-                            "Encryption failed for $contactId: $encryptError", e)
+                    val encrypted = cryptoManager.encrypt(text, contact.publicKey)
+                    if (encrypted != text) {
+                        actuallyEncrypted = true
+                        encrypted
+                    } else {
+                        encryptError = "Encryption returned plaintext (key may be invalid)"
+                        DebugLogger.w("MainViewModel", "sendMessage", "SM-VM-WARN-002",
+                            "Encryption returned plaintext for $contactId")
                         text
                     }
                 } else {
                     encryptError = "No public key (PIN pairing without P2P key exchange)"
                     DebugLogger.w("MainViewModel", "sendMessage", "SM-VM-WARN-001",
-                        "No valid key for $contactId, sending plaintext")
+                        "No valid key for $contactId")
                     text
                 }
+
+                val settings = settings.value
+                if (!actuallyEncrypted && settings.blockUnencrypted) {
+                    _toastMessage.emit("Message blocked: encryption failed and unencrypted sending is disabled")
+                    DebugLogger.w("MainViewModel", "sendMessage", "SM-VM-WARN-003",
+                        "Blocked unencrypted message to $contactId: $encryptError")
+                    return@launch
+                }
+
                 val message = Message(
                     id = UUID.randomUUID().toString(),
                     contactId = contactId,
                     content = content,
                     originalContent = text,
-                    isEncrypted = hasValidKey && encryptError.isEmpty(),
+                    isEncrypted = actuallyEncrypted,
                     isFromMe = true,
                     isFile = false,
                     isRead = true,

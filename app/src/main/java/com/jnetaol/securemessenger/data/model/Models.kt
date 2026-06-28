@@ -53,6 +53,7 @@ data class AppSettings(
     val useUDP: Boolean = true,
     val localPort: Int = 0,
     val encryptionEnabled: Boolean = true,
+    val blockUnencrypted: Boolean = false,
     val autoAcceptFiles: Boolean = false,
     val notificationsEnabled: Boolean = true,
     val soundEnabled: Boolean = true,

@@ -52,11 +52,11 @@ class CryptoManager {
     }
 
     fun encrypt(plainText: String, publicKeyStr: String): String {
+        if (publicKeyStr.isBlank() || publicKeyStr.length < 20) {
+            DebugLogger.w("CryptoManager", "encrypt", "SM-CR-WARN-001", "Invalid public key, returning plaintext")
+            return plainText
+        }
         return try {
-            if (publicKeyStr.isBlank() || publicKeyStr.length < 20) {
-                DebugLogger.w("CryptoManager", "encrypt", "SM-CR-WARN-001", "Invalid public key, returning plaintext")
-                return plainText
-            }
             DebugLogger.d("CryptoManager", "encrypt", "SM-CR-005", "Encrypting text")
             val aesKey = generateAESKey()
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -65,7 +65,6 @@ class CryptoManager {
             val encryptedData = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
 
             val rsaCipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding")
-            val publicKey = javax.crypto.spec.SecretKeySpec(null, "RSA")
             val keyFactory = java.security.KeyFactory.getInstance("RSA")
             val pubKey = keyFactory.generatePublic(
                 java.security.spec.X509EncodedKeySpec(Base64.getDecoder().decode(publicKeyStr))
@@ -82,8 +81,8 @@ class CryptoManager {
 
             Base64.getEncoder().encodeToString(combined)
         } catch (e: Exception) {
-            DebugLogger.e("CryptoManager", "encrypt", "SM-CR-ERR-003", "Encryption failed", e)
-            throw SecurityException("Encryption failed: ${e.message}", e)
+            DebugLogger.e("CryptoManager", "encrypt", "SM-CR-ERR-003", "Encryption failed, falling back to plaintext", e)
+            plainText
         }
     }
 
@@ -118,6 +117,10 @@ class CryptoManager {
     }
 
     fun encryptBytes(data: ByteArray, publicKeyStr: String): ByteArray {
+        if (publicKeyStr.isBlank() || publicKeyStr.length < 20) {
+            DebugLogger.w("CryptoManager", "encryptBytes", "SM-CR-WARN-002", "Invalid public key, returning raw bytes")
+            return data
+        }
         return try {
             DebugLogger.d("CryptoManager", "encryptBytes", "SM-CR-007", "Encrypting ${data.size} bytes")
             val aesKey = generateAESKey()
@@ -142,8 +145,8 @@ class CryptoManager {
             System.arraycopy(encryptedData, 0, combined, 4 + iv.size + 2 + encryptedAesKey.size, encryptedData.size)
             combined
         } catch (e: Exception) {
-            DebugLogger.e("CryptoManager", "encryptBytes", "SM-CR-ERR-005", "Byte encryption failed", e)
-            throw SecurityException("Byte encryption failed: ${e.message}", e)
+            DebugLogger.e("CryptoManager", "encryptBytes", "SM-CR-ERR-005", "Byte encryption failed, falling back to raw", e)
+            data
         }
     }
 
