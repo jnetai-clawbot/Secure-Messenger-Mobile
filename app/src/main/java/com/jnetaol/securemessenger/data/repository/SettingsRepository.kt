@@ -21,9 +21,19 @@ class SettingsRepository(context: Context) {
     private fun loadSettings(): AppSettings {
         return try {
             AppSettings(
-                serverAddress = prefs.getString("server_address", "0.0.0.0") ?: "0.0.0.0",
-                serverPort = prefs.getInt("server_port", 8080),
-                useLocalNetwork = prefs.getBoolean("use_local_network", true),
+                stunServer1 = prefs.getString("stun_server1", "stun:stun.l.google.com:19302") ?: "stun:stun.l.google.com:19302",
+                stunServer2 = prefs.getString("stun_server2", "stun:stun1.l.google.com:19302") ?: "stun:stun1.l.google.com:19302",
+                turnServer = prefs.getString("turn_server", "turn:openrelay.metered.ca:80") ?: "turn:openrelay.metered.ca:80",
+                turnUsername = prefs.getString("turn_username", "openrelayproject") ?: "openrelayproject",
+                turnPassword = prefs.getString("turn_password", "openrelayproject") ?: "openrelayproject",
+                useCustomTurn = prefs.getBoolean("use_custom_turn", false),
+                customTurnServer = prefs.getString("custom_turn_server", "") ?: "",
+                customTurnUsername = prefs.getString("custom_turn_username", "") ?: "",
+                customTurnPassword = prefs.getString("custom_turn_password", "") ?: "",
+                enableIPv6 = prefs.getBoolean("enable_ipv6", true),
+                preferTCP = prefs.getBoolean("prefer_tcp", false),
+                useUDP = prefs.getBoolean("use_udp", true),
+                localPort = prefs.getInt("local_port", 0),
                 encryptionEnabled = prefs.getBoolean("encryption_enabled", true),
                 autoAcceptFiles = prefs.getBoolean("auto_accept_files", false),
                 notificationsEnabled = prefs.getBoolean("notifications_enabled", true),
@@ -46,9 +56,19 @@ class SettingsRepository(context: Context) {
     suspend fun updateSettings(newSettings: AppSettings) {
         try {
             prefs.edit()
-                .putString("server_address", newSettings.serverAddress)
-                .putInt("server_port", newSettings.serverPort)
-                .putBoolean("use_local_network", newSettings.useLocalNetwork)
+                .putString("stun_server1", newSettings.stunServer1)
+                .putString("stun_server2", newSettings.stunServer2)
+                .putString("turn_server", newSettings.turnServer)
+                .putString("turn_username", newSettings.turnUsername)
+                .putString("turn_password", newSettings.turnPassword)
+                .putBoolean("use_custom_turn", newSettings.useCustomTurn)
+                .putString("custom_turn_server", newSettings.customTurnServer)
+                .putString("custom_turn_username", newSettings.customTurnUsername)
+                .putString("custom_turn_password", newSettings.customTurnPassword)
+                .putBoolean("enable_ipv6", newSettings.enableIPv6)
+                .putBoolean("prefer_tcp", newSettings.preferTCP)
+                .putBoolean("use_udp", newSettings.useUDP)
+                .putInt("local_port", newSettings.localPort)
                 .putBoolean("encryption_enabled", newSettings.encryptionEnabled)
                 .putBoolean("auto_accept_files", newSettings.autoAcceptFiles)
                 .putBoolean("notifications_enabled", newSettings.notificationsEnabled)

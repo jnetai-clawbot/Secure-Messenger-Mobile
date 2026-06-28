@@ -30,9 +30,19 @@ data class Message(
 )
 
 data class AppSettings(
-    val serverAddress: String = "0.0.0.0",
-    val serverPort: Int = 8080,
-    val useLocalNetwork: Boolean = true,
+    val stunServer1: String = "stun:stun.l.google.com:19302",
+    val stunServer2: String = "stun:stun1.l.google.com:19302",
+    val turnServer: String = "turn:openrelay.metered.ca:80",
+    val turnUsername: String = "openrelayproject",
+    val turnPassword: String = "openrelayproject",
+    val useCustomTurn: Boolean = false,
+    val customTurnServer: String = "",
+    val customTurnUsername: String = "",
+    val customTurnPassword: String = "",
+    val enableIPv6: Boolean = true,
+    val preferTCP: Boolean = false,
+    val useUDP: Boolean = true,
+    val localPort: Int = 0,
     val encryptionEnabled: Boolean = true,
     val autoAcceptFiles: Boolean = false,
     val notificationsEnabled: Boolean = true,

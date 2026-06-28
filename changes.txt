@@ -1,0 +1,61 @@
+Secure Mobile Messenger - Changes Log
+=====================================
+
+v1.0.1 - P2P & Compatibility Update (2026-06-28)
+-------------------------------------------------
+- Lowered minSdk from 29 to 26 (Android 8.0) for Samsung S8, S9, Pixel 6, Pixel 7+ compatibility
+- Added multi-ABI support: arm64-v8a, armeabi-v7a, x86_64, x86
+- Replaced server-based architecture with true P2P (no central server required)
+- Added built-in P2P networking with TCP and UDP support
+- Default Google STUN servers: stun.l.google.com:19302, stun1.l.google.com:19302
+- Default free TURN server: openrelay.metered.ca:80
+- Custom TURN server settings (URL, username, password)
+- IPv4 and IPv6 dual-stack support with toggle
+- TCP/UDP protocol selection in settings
+- Configurable local port (auto or manual)
+- STUN-based public address discovery for NAT traversal
+- Fixed enableEdgeToEdge compatibility for API < 29
+- Fixed HorizontalDivider -> Divider for older Compose compatibility
+- Same keystore used for seamless updates
+
+v1.0.0 - Initial Release (2026-06-28)
+--------------------------------------
+- Created Android project with Kotlin + Jetpack Compose (Material 3)
+- Implemented Part A: QR code and PIN identity generation for pairing
+  - Auto-generated 6-digit PIN and unique identity ID
+  - Regenerate button to create new QR code and PIN
+  - QR code scanning (simulated) and PIN entry for pairing
+- Implemented Part B: End-to-end encryption
+  - RSA-2048 key pair generation per contact (unique keys per contact)
+  - AES-256-GCM for message/file encryption
+  - RSA-OAEP for key wrapping
+  - Keys removed when contact is deleted/blocked
+- Chat features:
+  - 1-to-1 messaging with encrypted text
+  - File attachment and transfer with encryption
+  - Nudge user functionality
+  - Block user with confirmation dialog
+  - End chat with key cleanup
+  - Clear chat history
+  - Add/remove friend
+- Settings:
+  - Network settings (server address, port, local network toggle)
+  - Chat settings (encryption, auto-accept files, notifications, sound, vibration)
+  - History retention (days)
+  - Storage location (with directory picker)
+  - Theme settings (dark/light mode, custom colors for primary, background, text, accent)
+- About section:
+  - "Made by jnetai.com"
+  - Full version number display
+  - Check for updates button (GitHub API)
+  - Share app button
+- Dark-centered theme with proper bottom spacing
+- Room database for contacts and messages
+- DataStore preferences for settings
+- Persistent error handling and debugging (DebugLogger with error codes)
+- GitHub Actions workflows:
+  - Debug build on push to main
+  - Release build on tag push (v*) or manual dispatch
+  - Same keystore for updates (no uninstall required)
+- Release APK: Secure Mobile Messenger.apk
+- Repository: https://github.com/jnetai-clawbot/Secure-Messenger-Mobile

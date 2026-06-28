@@ -94,31 +94,100 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            SettingsSection("Network") {
+            SettingsSection("P2P / WebRTC") {
                 SettingsItem(
                     icon = Icons.Default.Dns,
-                    title = "Server Address",
-                    subtitle = settings.serverAddress,
+                    title = "STUN Server 1",
+                    subtitle = settings.stunServer1,
                     onClick = {
-                        val updated = settings.copy(serverAddress = if (settings.serverAddress == "0.0.0.0") "192.168.1.1" else "0.0.0.0")
+                        val updated = settings.copy(stunServer1 = if (settings.stunServer1 == "stun:stun.l.google.com:19302")
+                            "stun:stun2.l.google.com:19302" else "stun:stun.l.google.com:19302")
                         viewModel.updateSettings(updated)
+                    }
+                )
+                SettingsItem(
+                    icon = Icons.Default.Dns,
+                    title = "STUN Server 2",
+                    subtitle = settings.stunServer2,
+                    onClick = {
+                        val updated = settings.copy(stunServer2 = if (settings.stunServer2 == "stun:stun1.l.google.com:19302")
+                            "stun:stun3.l.google.com:19302" else "stun:stun1.l.google.com:19302")
+                        viewModel.updateSettings(updated)
+                    }
+                )
+                SettingsItem(
+                    icon = Icons.Default.Router,
+                    title = "TURN Server",
+                    subtitle = if (settings.useCustomTurn && settings.customTurnServer.isNotEmpty())
+                        settings.customTurnServer else settings.turnServer,
+                    onClick = {
+                        val updated = settings.copy(useCustomTurn = !settings.useCustomTurn)
+                        viewModel.updateSettings(updated)
+                    }
+                )
+                if (settings.useCustomTurn) {
+                    SettingsItem(
+                        icon = Icons.Default.Edit,
+                        title = "Custom TURN URL",
+                        subtitle = settings.customTurnServer.ifEmpty { "tap to set" },
+                        onClick = {
+                            val updated = settings.copy(
+                                customTurnServer = if (settings.customTurnServer.isEmpty())
+                                    "turn:your-server.com:3478" else ""
+                            )
+                            viewModel.updateSettings(updated)
+                        }
+                    )
+                    SettingsItem(
+                        icon = Icons.Default.Person,
+                        title = "TURN Username",
+                        subtitle = settings.customTurnUsername.ifEmpty { "tap to set" },
+                        onClick = {
+                            val updated = settings.copy(customTurnUsername = if (settings.customTurnUsername.isEmpty()) "user" else "")
+                            viewModel.updateSettings(updated)
+                        }
+                    )
+                    SettingsItem(
+                        icon = Icons.Default.Lock,
+                        title = "TURN Password",
+                        subtitle = if (settings.customTurnPassword.isNotEmpty()) "****" else "tap to set",
+                        onClick = {
+                            val updated = settings.copy(customTurnPassword = if (settings.customTurnPassword.isEmpty()) "pass" else "")
+                            viewModel.updateSettings(updated)
+                        }
+                    )
+                }
+                SettingsToggle(
+                    icon = Icons.Default.Public,
+                    title = "Enable IPv6",
+                    checked = settings.enableIPv6,
+                    onCheckedChange = {
+                        viewModel.updateSettings(settings.copy(enableIPv6 = it))
+                    }
+                )
+                SettingsToggle(
+                    icon = Icons.Default.SwapVert,
+                    title = "Prefer TCP",
+                    checked = settings.preferTCP,
+                    onCheckedChange = {
+                        viewModel.updateSettings(settings.copy(preferTCP = it))
+                    }
+                )
+                SettingsToggle(
+                    icon = Icons.Default.Speed,
+                    title = "Use UDP",
+                    checked = settings.useUDP,
+                    onCheckedChange = {
+                        viewModel.updateSettings(settings.copy(useUDP = it))
                     }
                 )
                 SettingsItem(
                     icon = Icons.Default.SettingsEthernet,
-                    title = "Server Port",
-                    subtitle = settings.serverPort.toString(),
+                    title = "Local Port",
+                    subtitle = if (settings.localPort > 0) "${settings.localPort}" else "Auto",
                     onClick = {
-                        val updated = settings.copy(serverPort = if (settings.serverPort == 8080) 9090 else 8080)
+                        val updated = settings.copy(localPort = if (settings.localPort == 0) 12345 else 0)
                         viewModel.updateSettings(updated)
-                    }
-                )
-                SettingsToggle(
-                    icon = Icons.Default.Wifi,
-                    title = "Use Local Network",
-                    checked = settings.useLocalNetwork,
-                    onCheckedChange = {
-                        viewModel.updateSettings(settings.copy(useLocalNetwork = it))
                     }
                 )
             }

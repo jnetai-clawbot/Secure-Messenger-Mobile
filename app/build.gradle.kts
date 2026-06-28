@@ -10,12 +10,12 @@ android {
 
     defaultConfig {
         applicationId = "com.jnetaol.securemessenger"
-        minSdk = 29
+        minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 10001
+        versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        ndk { abiFilters += listOf("arm64-v8a") }
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86") }
     }
 
     signingConfigs {
