@@ -66,7 +66,33 @@ class MainActivity : ComponentActivity() {
                         containerColor = MaterialTheme.colorScheme.background
                     ) { padding ->
                         Box(Modifier.padding(padding)) {
-                            try {
+                            var screenError by remember { mutableStateOf<String?>(null) }
+                            if (screenError != null) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            "Error [SM-MA-ERR-003]",
+                                            color = MaterialTheme.colorScheme.error,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            screenError ?: "Unknown error",
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontSize = 14.sp
+                                        )
+                                        Spacer(Modifier.height(16.dp))
+                                        Button(onClick = {
+                                            screenError = null
+                                            currentScreen = Screen.Home
+                                        }) {
+                                            Text("Go Home")
+                                        }
+                                    }
+                                }
+                            } else {
                                 when (currentScreen) {
                                     Screen.Home -> HomeScreen(
                                         viewModel = mainViewModel,
@@ -94,30 +120,6 @@ class MainActivity : ComponentActivity() {
                                         viewModel = mainViewModel,
                                         onBack = { currentScreen = Screen.Home }
                                     )
-                                }
-                            } catch (e: Exception) {
-                                DebugLogger.e("MainActivity", "screen", "SM-MA-ERR-003",
-                                    "Screen crash: ${currentScreen.name} - ${e.message}", e)
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            "Error [SM-MA-ERR-003]",
-                                            color = MaterialTheme.colorScheme.error,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            e.message ?: "Unknown error",
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            fontSize = 14.sp
-                                        )
-                                        Spacer(Modifier.height(16.dp))
-                                        Button(onClick = { currentScreen = Screen.Home }) {
-                                            Text("Go Home")
-                                        }
-                                    }
                                 }
                             }
                         }
