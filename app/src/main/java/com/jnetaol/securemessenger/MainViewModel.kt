@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
@@ -133,20 +134,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun selectContact(contactId: String) {
         DebugLogger.d("MainViewModel", "selectContact", "SM-VM-001", "Selecting contact: $contactId")
         _selectedContactId.value = contactId
-        val existing = contactsWithMeta.value.find { it.contact.id == contactId }?.contact
-        if (existing != null) {
-            _currentContactDirect.value = existing
+        try {
+            val contact = runBlocking { contactRepo.getContactByIdSync(contactId) }
+            if (contact != null) {
+                _currentContactDirect.value = contact
+            }
+        } catch (e: Exception) {
+            DebugLogger.e("MainViewModel", "selectContact", "SM-VM-ERR-013", "Failed to load contact", e)
         }
         viewModelScope.launch {
-            try {
-                val contact = contactRepo.getContactByIdSync(contactId)
-                if (contact != null) {
-                    _currentContactDirect.value = contact
-                }
-                chatRepo.markAllRead(contactId)
-            } catch (e: Exception) {
-                DebugLogger.e("MainViewModel", "selectContact", "SM-VM-ERR-013", "Failed to mark read", e)
-            }
+            try { chatRepo.markAllRead(contactId) } catch (_: Exception) {}
         }
     }
 
