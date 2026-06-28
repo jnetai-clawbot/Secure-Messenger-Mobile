@@ -1,10 +1,13 @@
 package com.jnetaol.securemessenger.ui.screens
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +20,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.jnetaol.securemessenger.MainViewModel
+import com.jnetaol.securemessenger.pairing.QRCodeGenerator
+import com.jnetaol.securemessenger.pairing.QRScannerActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,13 +43,38 @@ fun PairScreen(
     val identityManager = viewModel.identityManager
     var pinInput by remember { mutableStateOf("") }
     var showRegenerateDialog by remember { mutableStateOf(false) }
-    var showScanning by remember { mutableStateOf(false) }
+    var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    val qrData = remember { identityManager.qrCodeData }
+
+    LaunchedEffect(qrData) {
+        qrBitmap = QRCodeGenerator.generateQRCode(qrData)
+    }
+
+    val scannerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val qrResult = result.data?.getStringExtra("QR_RESULT")
+        if (!qrResult.isNullOrEmpty() && qrResult.startsWith("SM|")) {
+            val parts = qrResult.split("|")
+            if (parts.size >= 3) {
+                val scannedPin = parts[2]
+                viewModel.pairWithQr(qrResult, scannedPin)
+                onBack()
+            } else {
+                viewModel.showToast("Invalid QR code format")
+            }
+        } else if (!qrResult.isNullOrEmpty()) {
+            viewModel.showToast("Not a valid Secure Messenger QR code")
+        }
+    }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            showScanning = true
+            val intent = Intent(context, QRScannerActivity::class.java)
+            scannerLauncher.launch(intent)
         } else {
             Toast.makeText(context, "Camera permission required for QR scanning", Toast.LENGTH_SHORT).show()
         }
@@ -120,27 +152,25 @@ fun PairScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(200.dp)
+                            .size(220.dp)
                             .background(
-                                MaterialTheme.colorScheme.surface,
+                                Color.White,
                                 RoundedCornerShape(12.dp)
-                            ),
+                            )
+                            .padding(8.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                Icons.Default.QrCode,
-                                contentDescription = "QR Code",
-                                modifier = Modifier.size(120.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                        val bitmap = qrBitmap
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Your QR Code",
+                                modifier = Modifier.fillMaxSize()
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "QR Code",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        } else {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -155,7 +185,7 @@ fun PairScreen(
                         letterSpacing = 8.sp
                     )
                     Text(
-                        "Share this PIN with your contact",
+                        "Share this PIN or QR code with your contact",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
@@ -193,7 +223,8 @@ fun PairScreen(
                         context, Manifest.permission.CAMERA
                     ) == PackageManager.PERMISSION_GRANTED
                     if (hasCameraPermission) {
-                        showScanning = true
+                        val intent = Intent(context, QRScannerActivity::class.java)
+                        scannerLauncher.launch(intent)
                     } else {
                         cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                     }
@@ -249,64 +280,5 @@ fun PairScreen(
 
             Spacer(modifier = Modifier.height(80.dp))
         }
-    }
-
-    if (showScanning) {
-        AlertDialog(
-            onDismissRequest = { showScanning = false },
-            title = { Text("Scan QR Code") },
-            text = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        "Point your camera at the other device's QR code",
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(200.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                RoundedCornerShape(12.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.QrCodeScanner,
-                            contentDescription = "Scanner",
-                            modifier = Modifier.size(100.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Scanning...",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.pairWithQr("scanned_qr_data")
-                    showScanning = false
-                    onBack()
-                }) {
-                    Text("Simulate Scan")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showScanning = false }) {
-                    Text("Cancel")
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurface
-        )
     }
 }

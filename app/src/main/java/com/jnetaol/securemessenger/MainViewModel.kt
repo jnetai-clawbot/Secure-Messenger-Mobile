@@ -93,15 +93,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun pairWithQr(qrData: String) {
+    fun pairWithQr(qrData: String, pin: String = "") {
         viewModelScope.launch {
             try {
                 DebugLogger.d("MainViewModel", "pairWithQr", "SM-VM-005", "Pairing with QR: $qrData")
                 val contactId = UUID.randomUUID().toString()
                 val keyPair = cryptoManager.generateKeyPair()
+                val displayName = if (pin.isNotEmpty()) "Contact $pin" else "QR Contact"
                 val contact = Contact(
                     id = contactId,
-                    displayName = "QR Contact",
+                    displayName = displayName,
                     publicKey = keyPair.publicKey,
                     privateKey = keyPair.privateKey,
                     isBlocked = false,

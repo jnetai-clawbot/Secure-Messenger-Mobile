@@ -12,8 +12,8 @@ android {
         applicationId = "com.jnetaol.securemessenger"
         minSdk = 26
         targetSdk = 34
-        versionCode = 10001
-        versionName = "1.0.1"
+        versionCode = 10002
+        versionName = "1.0.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86") }
     }
@@ -81,7 +81,12 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     implementation("com.google.zxing:core:3.5.3")
-    implementation("com.google.zxing:android-core:3.3.0")
+
+    val cameraxVersion = "1.3.1"
+    implementation("androidx.camera:camera-camera2:$cameraxVersion")
+    implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
+    implementation("androidx.camera:camera-view:$cameraxVersion")
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
 
     implementation("com.google.code.gson:gson:2.10.1")
 

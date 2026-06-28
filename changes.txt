@@ -1,6 +1,17 @@
 Secure Mobile Messenger - Changes Log
 =====================================
 
+v1.0.2 - Real QR Code & Scanner (2026-06-28)
+---------------------------------------------
+- Replaced placeholder QR icon with real QR code bitmap generated via ZXing
+- Added CameraX + ML Kit barcode scanning for real QR code scanning
+- QRScannerActivity with live camera preview and ML Kit barcode detection
+- QR codes encode identity as "SM|id|pin" format for pairing
+- Scanned QR data parsed to extract PIN for contact naming
+- Removed "Simulate Scan" placeholder — now uses real camera
+- Added CameraX, ML Kit barcode-scanning dependencies
+- Updated proguard rules for CameraX and ML Kit
+
 v1.0.1 - P2P & Compatibility Update (2026-06-28)
 -------------------------------------------------
 - Lowered minSdk from 29 to 26 (Android 8.0) for Samsung S8, S9, Pixel 6, Pixel 7+ compatibility
