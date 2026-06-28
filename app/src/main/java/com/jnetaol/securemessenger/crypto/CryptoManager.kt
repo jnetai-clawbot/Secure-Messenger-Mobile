@@ -53,6 +53,10 @@ class CryptoManager {
 
     fun encrypt(plainText: String, publicKeyStr: String): String {
         return try {
+            if (publicKeyStr.isBlank() || publicKeyStr.length < 20) {
+                DebugLogger.w("CryptoManager", "encrypt", "SM-CR-WARN-001", "Invalid public key, returning plaintext")
+                return plainText
+            }
             DebugLogger.d("CryptoManager", "encrypt", "SM-CR-005", "Encrypting text")
             val aesKey = generateAESKey()
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")

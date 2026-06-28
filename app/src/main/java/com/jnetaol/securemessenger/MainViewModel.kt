@@ -273,13 +273,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     _toastMessage.emit("Contact not found")
                     return@launch
                 }
-                val encryptedText = cryptoManager.encrypt(text, contact.publicKey)
+                val hasValidKey = contact.publicKey.isNotEmpty() && contact.publicKey.length > 20
+                val content = if (hasValidKey) {
+                    try { cryptoManager.encrypt(text, contact.publicKey) } catch (_: Exception) { text }
+                } else {
+                    text
+                }
                 val message = Message(
                     id = UUID.randomUUID().toString(),
                     contactId = contactId,
-                    content = encryptedText,
+                    content = content,
                     originalContent = text,
-                    isEncrypted = true,
+                    isEncrypted = hasValidKey,
                     isFromMe = true,
                     isFile = false,
                     isRead = true,
@@ -303,17 +308,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     _toastMessage.emit("Contact not found")
                     return@launch
                 }
+                val hasValidKey = contact.publicKey.isNotEmpty() && contact.publicKey.length > 20
                 val fileBytes = file.readBytes()
-                val encryptedBytes = cryptoManager.encryptBytes(fileBytes, contact.publicKey)
-                val storageDir = settingsRepo.getStorageDir(getApplication())
-                val encryptedFile = File(storageDir, "enc_${file.name}")
-                encryptedFile.writeBytes(encryptedBytes)
+                val content = if (hasValidKey) {
+                    try {
+                        val encryptedBytes = cryptoManager.encryptBytes(fileBytes, contact.publicKey)
+                        val storageDir = settingsRepo.getStorageDir(getApplication())
+                        val encryptedFile = File(storageDir, "enc_${file.name}")
+                        encryptedFile.writeBytes(encryptedBytes)
+                        encryptedFile.absolutePath
+                    } catch (_: Exception) {
+                        file.absolutePath
+                    }
+                } else {
+                    file.absolutePath
+                }
                 val message = Message(
                     id = UUID.randomUUID().toString(),
                     contactId = contactId,
-                    content = encryptedFile.absolutePath,
+                    content = content,
                     originalContent = file.name,
-                    isEncrypted = true,
+                    isEncrypted = hasValidKey,
                     isFromMe = true,
                     isFile = true,
                     fileName = file.name,
