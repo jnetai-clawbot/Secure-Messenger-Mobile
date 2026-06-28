@@ -12,8 +12,8 @@ android {
         applicationId = "com.jnetaol.securemessenger"
         minSdk = 26
         targetSdk = 34
-        versionCode = 10004
-        versionName = "1.0.4"
+        versionCode = 10005
+        versionName = "1.0.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86") }
     }
@@ -35,11 +35,11 @@ android {
             buildConfigField("boolean", "ENABLE_EXTRA_LOGGING", "true")
         }
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            isDebuggable = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             signingConfig = signingConfigs.getByName("release")
-            buildConfigField("boolean", "ENABLE_EXTRA_LOGGING", "false")
+            buildConfigField("boolean", "ENABLE_EXTRA_LOGGING", "true")
         }
     }
 

@@ -18,9 +18,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jnetaol.securemessenger.BuildConfig
 import com.jnetaol.securemessenger.MainViewModel
+import com.jnetaol.securemessenger.logger.DebugLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -203,24 +205,48 @@ fun AboutScreen(
 
 private fun checkForUpdate(): String {
     return try {
+        DebugLogger.d("AboutScreen", "checkForUpdate", "SM-AU-001", "Checking for updates")
         val url = URL("https://api.github.com/repos/jnetai-clawbot/Secure-Messenger-Mobile/releases/latest")
         val connection = url.openConnection() as HttpURLConnection
         connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
-        connection.connectTimeout = 10000
-        connection.readTimeout = 10000
+        connection.setRequestProperty("User-Agent", "SecureMessenger-Android")
+        connection.connectTimeout = 15000
+        connection.readTimeout = 15000
+
+        val responseCode = connection.responseCode
+        if (responseCode != 200) {
+            connection.disconnect()
+            return "Error: GitHub API returned $responseCode"
+        }
 
         val response = connection.inputStream.bufferedReader().readText()
         connection.disconnect()
 
-        val tagName = response.split("\"tag_name\":\"")[1].split("\"")[0]
-        val currentVersion = BuildConfig.VERSION_NAME
+        val json = JSONObject(response)
+        val tagName = json.optString("tag_name", "")
+        if (tagName.isEmpty()) {
+            return "Error: Could not parse version info"
+        }
 
-        if (tagName.removePrefix("v") != currentVersion) {
+        val currentVersion = BuildConfig.VERSION_NAME
+        val latestVersion = tagName.removePrefix("v")
+
+        DebugLogger.i("AboutScreen", "checkForUpdate", "SM-AU-002",
+            "Current: v$currentVersion, Latest: $tagName")
+
+        if (latestVersion != currentVersion) {
             "Update available: $tagName\nCurrent: v$currentVersion"
         } else {
             "You are up to date (v$currentVersion)"
         }
+    } catch (e: java.net.UnknownHostException) {
+        DebugLogger.e("AboutScreen", "checkForUpdate", "SM-AU-ERR-001", "No network", e)
+        "Error: No internet connection [SM-AU-ERR-001]"
+    } catch (e: java.net.SocketTimeoutException) {
+        DebugLogger.e("AboutScreen", "checkForUpdate", "SM-AU-ERR-002", "Timeout", e)
+        "Error: Connection timed out [SM-AU-ERR-002]"
     } catch (e: Exception) {
-        "Could not check for updates. Check your internet connection."
+        DebugLogger.e("AboutScreen", "checkForUpdate", "SM-AU-ERR-003", "Update check failed", e)
+        "Error: ${e.javaClass.simpleName} [SM-AU-ERR-003]"
     }
 }

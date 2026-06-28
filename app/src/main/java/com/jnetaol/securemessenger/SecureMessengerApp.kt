@@ -11,7 +11,6 @@ import com.jnetaol.securemessenger.network.P2PManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class SecureMessengerApp : Application() {
@@ -25,7 +24,7 @@ class SecureMessengerApp : Application() {
         private set
     lateinit var identityManager: IdentityManager
         private set
-    lateinit var p2pManager: P2PManager
+    var p2pManager: P2PManager? = null
         private set
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -33,12 +32,26 @@ class SecureMessengerApp : Application() {
     override fun onCreate() {
         super.onCreate()
         DebugLogger.i("SecureMessengerApp", "onCreate", "SM-APP-001", "App initializing")
+
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            DebugLogger.e("SecureMessengerApp", "uncaughtException", "SM-APP-CRASH-001",
+                "Thread: ${thread.name}, Error: ${throwable.message}", throwable)
+            throwable.printStackTrace()
+        }
+
         try {
             database = AppDatabase.getInstance(this)
             contactRepository = ContactRepository(database.contactDao())
             chatRepository = ChatRepository(database.chatDao(), database.messageDao())
             settingsRepository = SettingsRepository(this)
             identityManager = IdentityManager(this)
+            DebugLogger.i("SecureMessengerApp", "onCreate", "SM-APP-002", "Core services initialized")
+        } catch (e: Exception) {
+            DebugLogger.e("SecureMessengerApp", "onCreate", "SM-APP-ERR-001", "Core init failed", e)
+            throw e
+        }
+
+        try {
             p2pManager = P2PManager(
                 settings = com.jnetaol.securemessenger.data.model.AppSettings(),
                 onMessageReceived = { peerId, data ->
@@ -51,16 +64,22 @@ class SecureMessengerApp : Application() {
                     DebugLogger.e("SecureMessengerApp", "onConnectionFailed", "SM-APP-P2P-ERR-001", "Failed $peerId: $reason")
                 }
             )
-            DebugLogger.i("SecureMessengerApp", "onCreate", "SM-APP-002", "App initialized successfully")
+            DebugLogger.i("SecureMessengerApp", "onCreate", "SM-APP-003", "P2P manager initialized")
         } catch (e: Exception) {
-            DebugLogger.e("SecureMessengerApp", "onCreate", "SM-APP-ERR-001", "App initialization failed", e)
-            throw e
+            DebugLogger.e("SecureMessengerApp", "onCreate", "SM-APP-ERR-002", "P2P init failed (non-fatal)", e)
+            p2pManager = null
         }
+
+        DebugLogger.i("SecureMessengerApp", "onCreate", "SM-APP-004", "App initialized successfully")
     }
 
     override fun onTerminate() {
-        DebugLogger.i("SecureMessengerApp", "onTerminate", "SM-APP-003", "App terminating")
-        p2pManager.destroy()
+        DebugLogger.i("SecureMessengerApp", "onTerminate", "SM-APP-005", "App terminating")
+        try {
+            p2pManager?.destroy()
+        } catch (e: Exception) {
+            DebugLogger.e("SecureMessengerApp", "onTerminate", "SM-APP-ERR-003", "P2P destroy failed", e)
+        }
         super.onTerminate()
     }
 }
