@@ -35,6 +35,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _qrBitmap = MutableStateFlow<Bitmap?>(null)
     val qrBitmap: StateFlow<Bitmap?> = _qrBitmap
 
+    private val _currentContactDirect = MutableStateFlow<Contact?>(null)
+    val currentContactDirect: StateFlow<Contact?> = _currentContactDirect
+
     init {
         refreshQRCode()
     }
@@ -44,7 +47,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val p2p = app.p2pManager
                 val localIp = getLocalIpAddress()
-                val port = p2p?.getLocalPort() ?: 0
+                var port = 0
+                for (i in 0 until 20) {
+                    port = p2p?.getLocalPort() ?: 0
+                    if (port > 0) break
+                    delay(200)
+                }
                 val data = if (port > 0) {
                     identityManager.getQRDataWithP2P(localIp, port)
                 } else {
@@ -127,6 +135,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 chatRepo.markAllRead(contactId)
+                val contact = contactRepo.getContactByIdSync(contactId)
+                if (contact != null) {
+                    _currentContactDirect.value = contact
+                }
             } catch (e: Exception) {
                 DebugLogger.e("MainViewModel", "selectContact", "SM-VM-ERR-013", "Failed to mark read", e)
             }
@@ -183,14 +195,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val parts = qrData.split("|")
                 val peerId = parts.getOrNull(1) ?: UUID.randomUUID().toString()
                 val peerPin = parts.getOrNull(2) ?: pin
-                val p2pAddr = parts.getOrNull(3) ?: ""
+                val peerPublicKey = parts.getOrNull(3) ?: ""
+                val p2pAddr = parts.getOrNull(4) ?: ""
 
                 val keyPair = cryptoManager.generateKeyPair()
                 val displayName = if (peerPin.isNotEmpty()) "PIN: $peerPin" else "QR Contact"
                 val contact = Contact(
                     id = peerId,
                     displayName = displayName,
-                    publicKey = "",
+                    publicKey = peerPublicKey,
                     privateKey = keyPair.privateKey,
                     isBlocked = false,
                     isFriend = false,
@@ -204,7 +217,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val port = addrParts.getOrNull(1)?.toIntOrNull() ?: 0
                     if (port > 0) {
                         app.p2pManager?.connectToPeer(peerId, host, port)
-                        delay(500)
+                        delay(800)
                         val myId = identityManager.identityId
                         val myPin = identityManager.pinCode
                         val myKey = keyPair.publicKey

@@ -183,23 +183,23 @@ class P2PManager(
         }
     }
 
-    fun connectToPeer(peerId: String, address: String, port: Int) {
-        scope.launch {
-            try {
-                val useUDP = settings.useUDP && !settings.preferTCP
-                if (useUDP) {
-                    connectUDP(peerId, address, port)
-                } else {
-                    connectTCP(peerId, address, port)
-                }
-            } catch (e: Exception) {
-                DebugLogger.e("P2PManager", "connectToPeer", "SM-P2P-ERR-005", "Connection failed", e)
-                onConnectionFailed(peerId, e.message ?: "Unknown error")
+    suspend fun connectToPeer(peerId: String, address: String, port: Int): Boolean {
+        return try {
+            val useUDP = settings.useUDP && !settings.preferTCP
+            if (useUDP) {
+                connectUDP(peerId, address, port)
+                true
+            } else {
+                connectTCP(peerId, address, port)
             }
+        } catch (e: Exception) {
+            DebugLogger.e("P2PManager", "connectToPeer", "SM-P2P-ERR-005", "Connection failed", e)
+            onConnectionFailed(peerId, e.message ?: "Unknown error")
+            false
         }
     }
 
-    private suspend fun connectTCP(peerId: String, address: String, port: Int) = withContext(Dispatchers.IO) {
+    private suspend fun connectTCP(peerId: String, address: String, port: Int): Boolean = withContext(Dispatchers.IO) {
         try {
             val socket = Socket()
             socket.soTimeout = 10000
@@ -215,13 +215,32 @@ class P2PManager(
             if (response == "SM_P2P_ACK") {
                 onConnectionEstablished(peerId)
                 DebugLogger.i("P2PManager", "connectTCP", "SM-P2P-008", "TCP connected to $peerId")
+                scope.launch {
+                    try {
+                        var line: String?
+                        while (reader.readLine().also { line = it } != null) {
+                            val msg = line ?: break
+                            if (msg.startsWith("SM_MSG:")) {
+                                val payload = msg.removePrefix("SM_MSG:")
+                                onMessageReceived(peerId, payload.toByteArray(Charsets.UTF_8))
+                            } else if (msg == "SM_P2P_BYE") break
+                        }
+                    } catch (_: Exception) {}
+                    try { socket.close() } catch (_: Exception) {}
+                    activeConnections.remove(peerId)
+                }
+                true
             } else {
                 socket.close()
+                activeConnections.remove(peerId)
                 onConnectionFailed(peerId, "Handshake failed")
+                false
             }
         } catch (e: Exception) {
             DebugLogger.e("P2PManager", "connectTCP", "SM-P2P-ERR-006", "TCP connect failed", e)
+            activeConnections.remove(peerId)
             onConnectionFailed(peerId, e.message ?: "Connection failed")
+            false
         }
     }
 

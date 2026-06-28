@@ -34,7 +34,7 @@ fun ChatScreen(
     viewModel: MainViewModel,
     onBack: () -> Unit
 ) {
-    val contact by viewModel.currentContact.collectAsState()
+    val contact by viewModel.currentContactDirect.collectAsState()
     val messages by viewModel.messages.collectAsState()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
