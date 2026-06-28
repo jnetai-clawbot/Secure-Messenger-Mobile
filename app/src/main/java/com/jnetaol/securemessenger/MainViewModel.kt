@@ -1,6 +1,7 @@
 package com.jnetaol.securemessenger
 
 import android.app.Application
+import android.graphics.Bitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jnetaol.securemessenger.crypto.CryptoManager
@@ -8,8 +9,11 @@ import com.jnetaol.securemessenger.data.model.Contact
 import com.jnetaol.securemessenger.data.model.ContactWithMeta
 import com.jnetaol.securemessenger.data.model.Message
 import com.jnetaol.securemessenger.logger.DebugLogger
+import com.jnetaol.securemessenger.pairing.QRCodeGenerator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 
@@ -26,6 +30,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _selectedContactId = MutableStateFlow<String?>(null)
     val selectedContactId: StateFlow<String?> = _selectedContactId
+
+    private val _qrBitmap = MutableStateFlow<Bitmap?>(null)
+    val qrBitmap: StateFlow<Bitmap?> = _qrBitmap
+
+    init {
+        refreshQRCode()
+    }
+
+    fun refreshQRCode() {
+        viewModelScope.launch {
+            try {
+                val data = identityManager.qrCodeData
+                val bitmap = withContext(Dispatchers.Default) {
+                    QRCodeGenerator.generateQRCode(data)
+                }
+                _qrBitmap.value = bitmap
+            } catch (e: Exception) {
+                DebugLogger.e("MainViewModel", "refreshQRCode", "SM-VM-ERR-015", "QR gen failed", e)
+            }
+        }
+    }
 
     val contactsWithMeta: StateFlow<List<ContactWithMeta>> = contactRepo.getAllContacts()
         .flatMapLatest { contacts ->
@@ -89,6 +114,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 identityManager.regenerateIdentity()
+                refreshQRCode()
                 _toastMessage.emit("Identity regenerated")
                 DebugLogger.i("MainViewModel", "regenerateIdentity", "SM-VM-002", "Identity regenerated")
             } catch (e: Exception) {
