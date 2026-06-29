@@ -3,7 +3,9 @@ package com.jnetaol.securemessenger.ui.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.os.Environment
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -29,9 +31,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import com.jnetaol.securemessenger.MainViewModel
 import com.jnetaol.securemessenger.data.model.Message
-import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -45,7 +47,6 @@ fun ChatScreen(
     val contact by viewModel.currentContactDirect.collectAsState()
     val messages by viewModel.messages.collectAsState()
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
     var messageText by remember { mutableStateOf("") }
     var showBlockDialog by remember { mutableStateOf(false) }
     var showEndChatDialog by remember { mutableStateOf(false) }
@@ -392,7 +393,6 @@ fun ChatScreen(
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(message: Message) {
-    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val dateTimeFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
     val context = LocalContext.current
     val isFromMe = message.isFromMe
@@ -446,7 +446,26 @@ fun MessageBubble(message: Message) {
                     bottomStart = if (isFromMe) 16.dp else 4.dp,
                     bottomEnd = if (isFromMe) 4.dp else 16.dp
                 ),
-                colors = CardDefaults.cardColors(containerColor = bubbleColor)
+                colors = CardDefaults.cardColors(containerColor = bubbleColor),
+                modifier = Modifier.clickable {
+                    val fileName = message.fileName ?: return@clickable
+                    val downloadsDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "SecureMessenger")
+                    val file = File(downloadsDir, fileName)
+                    if (file.exists()) {
+                        try {
+                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(uri, context.contentResolver.getType(uri) ?: "*/*")
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(intent)
+                        } catch (_: Exception) {
+                            Toast.makeText(context, "Cannot open file", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(context, "File not found in Downloads", Toast.LENGTH_SHORT).show()
+                    }
+                }
             ) {
                 Row(
                     modifier = Modifier.padding(12.dp),

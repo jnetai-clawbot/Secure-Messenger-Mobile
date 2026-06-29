@@ -37,6 +37,8 @@ class SecureMessengerApp : Application() {
         private set
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var reconnectJob: kotlinx.coroutines.Job? = null
+    private val contactAddressCache = mutableMapOf<String, Pair<String, Int>>()
 
     override fun onCreate() {
         super.onCreate()
@@ -64,21 +66,17 @@ class SecureMessengerApp : Application() {
             p2pManager = P2PManager(
                 settings = com.jnetaol.securemessenger.data.model.AppSettings(),
                 onMessageReceived = { peerId, data ->
-                    DebugLogger.d("SecureMessengerApp", "onMessageReceived", "SM-APP-P2P-001", "Message from $peerId")
                     handleP2PMessage(peerId, data)
                 },
-                onConnectionEstablished = { peerId ->
-                    DebugLogger.i("SecureMessengerApp", "onConnectionEstablished", "SM-APP-P2P-002", "Connected to $peerId")
-                },
-                onConnectionFailed = { peerId, reason ->
-                    DebugLogger.e("SecureMessengerApp", "onConnectionFailed", "SM-APP-P2P-ERR-001", "Failed $peerId: $reason")
-                }
+                onConnectionEstablished = { },
+                onConnectionFailed = { _, _ -> }
             )
             p2pManager?.start()
             DebugLogger.i("SecureMessengerApp", "onCreate", "SM-APP-003", "P2P manager initialized and started")
             applicationScope.launch {
                 delay(2000)
                 autoConnectToContacts()
+                startPeriodicReconnect()
             }
         } catch (e: Exception) {
             DebugLogger.e("SecureMessengerApp", "onCreate", "SM-APP-ERR-002", "P2P init failed (non-fatal)", e)
@@ -258,14 +256,34 @@ class SecureMessengerApp : Application() {
                 if (contact.isBlocked) continue
                 val addr = getContactAddress(contact.id)
                 if (addr != null) {
+                    contactAddressCache[contact.id] = addr
                     p2pManager?.connectToPeer(contact.id, myId, addr.first, addr.second)
-                    DebugLogger.d("SecureMessengerApp", "autoConnect", "SM-APP-P2P-007",
-                        "Auto-connecting to ${contact.id}")
                 }
             }
         } catch (e: Exception) {
             DebugLogger.e("SecureMessengerApp", "autoConnect", "SM-APP-P2P-ERR-006",
                 "Auto-connect failed", e)
+        }
+    }
+
+    private fun startPeriodicReconnect() {
+        reconnectJob?.cancel()
+        reconnectJob = applicationScope.launch {
+            while (true) {
+                delay(3 * 60 * 1000L)
+                try {
+                    val contacts = contactRepository.getAllContactsSync()
+                    val myId = identityManager.identityId
+                    for (contact in contacts) {
+                        if (contact.isBlocked) continue
+                        val addr = contactAddressCache[contact.id] ?: getContactAddress(contact.id)
+                        if (addr != null) {
+                            contactAddressCache[contact.id] = addr
+                            p2pManager?.connectToPeer(contact.id, myId, addr.first, addr.second)
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
         }
     }
 

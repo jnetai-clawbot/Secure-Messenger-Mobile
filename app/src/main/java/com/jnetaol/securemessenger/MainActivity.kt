@@ -3,6 +3,7 @@ package com.jnetaol.securemessenger
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
@@ -26,6 +27,8 @@ import com.jnetaol.securemessenger.ui.theme.SecureMessengerTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private var showExitDialog = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
@@ -42,6 +45,7 @@ class MainActivity : ComponentActivity() {
                     val mainViewModel: MainViewModel = viewModel()
                     var currentScreen by remember { mutableStateOf<Screen>(Screen.Home) }
                     val snackbarHostState = remember { SnackbarHostState() }
+                    var showExitDialogState by remember { mutableStateOf(false) }
 
                     LaunchedEffect(Unit) {
                         try {
@@ -51,6 +55,29 @@ class MainActivity : ComponentActivity() {
                         } catch (e: Exception) {
                             DebugLogger.e("MainActivity", "toastCollect", "SM-MA-ERR-002", "Toast collect failed", e)
                         }
+                    }
+
+                    if (showExitDialogState) {
+                        AlertDialog(
+                            onDismissRequest = { showExitDialogState = false },
+                            title = { Text("Exit App?") },
+                            text = { Text("Do you want to exit the app or go to the home screen?") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showExitDialogState = false
+                                    finish()
+                                }) { Text("Exit") }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = {
+                                    showExitDialogState = false
+                                    currentScreen = Screen.Home
+                                }) { Text("Home") }
+                            },
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            titleContentColor = MaterialTheme.colorScheme.onSurface,
+                            textContentColor = MaterialTheme.colorScheme.onSurface
+                        )
                     }
 
                     Scaffold(
@@ -127,6 +154,10 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
+                    }
+
+                    BackHandler(enabled = currentScreen != Screen.Home) {
+                        showExitDialogState = true
                     }
                 }
             }
