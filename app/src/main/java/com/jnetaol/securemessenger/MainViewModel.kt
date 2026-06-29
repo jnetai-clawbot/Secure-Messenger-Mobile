@@ -315,7 +315,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     timestamp = System.currentTimeMillis()
                 )
                 chatRepo.insertMessage(message)
-                DebugLogger.i("MainViewModel", "sendMessage", "SM-VM-009", "Message sent: ${message.id}")
+                DebugLogger.i("MainViewModel", "sendMessage", "SM-VM-009", "Message stored: ${message.id}")
+
+                app.p2pManager?.sendMessage(contactId, text.toByteArray(Charsets.UTF_8))
+                DebugLogger.i("MainViewModel", "sendMessage", "SM-VM-020", "Message sent via P2P to $contactId")
             } catch (e: Exception) {
                 DebugLogger.e("MainViewModel", "sendMessage", "SM-VM-ERR-005", "Failed to send message", e)
                 _toastMessage.emit("Error sending message: ${e.message}")

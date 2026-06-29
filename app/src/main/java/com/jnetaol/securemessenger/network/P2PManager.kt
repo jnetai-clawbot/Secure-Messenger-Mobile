@@ -196,7 +196,6 @@ class P2PManager(
     private suspend fun connectTCP(peerId: String, address: String, port: Int): Boolean = withContext(Dispatchers.IO) {
         try {
             val socket = Socket()
-            socket.soTimeout = 10000
             socket.connect(InetSocketAddress(address, port), 10000)
             activeConnections[peerId] = socket
 
@@ -205,6 +204,7 @@ class P2PManager(
             writer.flush()
 
             val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
+            socket.soTimeout = 0
             val response = reader.readLine()
             if (response == "SM_P2P_ACK") {
                 onConnectionEstablished(peerId)
