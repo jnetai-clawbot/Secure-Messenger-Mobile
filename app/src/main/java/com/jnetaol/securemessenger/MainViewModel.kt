@@ -365,6 +365,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 chatRepo.insertMessage(message)
                 _toastMessage.emit("File sent")
+                app.p2pManager?.sendMessage(contactId, "FILE|${file.name}|${file.length()}".toByteArray(Charsets.UTF_8))
                 DebugLogger.i("MainViewModel", "sendFile", "SM-VM-011", "File sent: ${message.id}")
             } catch (e: Exception) {
                 DebugLogger.e("MainViewModel", "sendFile", "SM-VM-ERR-006", "Failed to send file", e)
@@ -390,6 +391,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 chatRepo.insertMessage(message)
                 _toastMessage.emit("Nudge sent!")
+                app.p2pManager?.sendMessage(contactId, "NUDGE".toByteArray(Charsets.UTF_8))
                 DebugLogger.i("MainViewModel", "nudgeContact", "SM-VM-012", "Nudge sent to: $contactId")
             } catch (e: Exception) {
                 DebugLogger.e("MainViewModel", "nudgeContact", "SM-VM-ERR-007", "Failed to send nudge", e)

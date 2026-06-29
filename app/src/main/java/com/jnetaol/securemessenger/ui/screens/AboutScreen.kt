@@ -1,6 +1,7 @@
 package com.jnetaol.securemessenger.ui.screens
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -170,13 +171,29 @@ fun AboutScreen(
                             MaterialTheme.colorScheme.surfaceVariant
                     )
                 ) {
-                    Text(
-                        msg,
-                        modifier = Modifier.padding(12.dp),
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center
-                    )
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            msg,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (msg.contains("available")) {
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/jnetai-clawbot/Secure-Messenger-Mobile/releases"))
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.OpenInBrowser, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Open Releases", fontSize = 13.sp)
+                            }
+                        }
+                    }
                 }
             }
 
