@@ -227,11 +227,11 @@ class SecureMessengerApp : Application() {
                             DebugLogger.d("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-004",
                                 "Message received from $peerId, ACK sent")
 
-                            val settings = settingsRepository.settings.value
-                            if (isNudge && settings.vibrationEnabled) {
+                            val appSettings = kotlinx.coroutines.runBlocking { settingsRepository.settings.first() }
+                            if (isNudge && appSettings.vibrationEnabled) {
                                 triggerVibration()
                             }
-                            if (settings.soundEnabled) {
+                            if (appSettings.soundEnabled) {
                                 playNotificationSound()
                             }
                         }
