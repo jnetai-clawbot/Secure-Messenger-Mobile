@@ -1,6 +1,13 @@
 package com.jnetaol.securemessenger
 
 import android.app.Application
+import android.content.Context
+import android.media.RingtoneManager
+import android.net.Uri
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import com.jnetaol.securemessenger.data.db.AppDatabase
 import com.jnetaol.securemessenger.data.repository.ChatRepository
 import com.jnetaol.securemessenger.data.repository.ContactRepository
@@ -150,21 +157,67 @@ class SecureMessengerApp : Application() {
                     try {
                         val contact = contactRepository.getContactByIdSync(peerId)
                         if (contact != null) {
-                            val decrypted = try {
-                                com.jnetaol.securemessenger.crypto.CryptoManager().decrypt(payload, contact.privateKey)
-                            } catch (e: Exception) {
-                                DebugLogger.w("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-WARN-001",
-                                    "Decrypt failed, storing raw: ${e.message}")
-                                payload
+                            val isNudge = payload == "NUDGE"
+                            val isFile = payload.startsWith("FILE|")
+                            val decrypted: String
+                            val isEnc: Boolean
+                            val fileName: String?
+                            val fileSize: Long?
+
+                            if (isNudge) {
+                                decrypted = "NUDGE"
+                                isEnc = false
+                                fileName = null
+                                fileSize = null
+                            } else if (isFile) {
+                                val fileParts = payload.split("|")
+                                fileName = fileParts.getOrNull(1) ?: "file"
+                                fileSize = fileParts.getOrNull(2)?.toLongOrNull() ?: 0
+                                val fileDataB64 = fileParts.getOrNull(3) ?: ""
+                                decrypted = fileName
+                                isEnc = fileDataB64.isNotEmpty()
+                                if (fileDataB64.isNotEmpty()) {
+                                    try {
+                                        val fileBytes = java.util.Base64.getDecoder().decode(fileDataB64)
+                                        val decryptedBytes = if (contact.publicKey.isNotEmpty()) {
+                                            try { com.jnetaol.securemessenger.crypto.CryptoManager().decryptBytes(fileBytes, contact.privateKey) }
+                                            catch (_: Exception) { fileBytes }
+                                        } else { fileBytes }
+                                        val storageDir = settingsRepository.getStorageDir(this@SecureMessengerApp)
+                                        val savedFile = java.io.File(storageDir, fileName)
+                                        savedFile.writeBytes(decryptedBytes)
+                                        DebugLogger.i("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-008",
+                                            "File saved: ${savedFile.absolutePath}")
+                                    } catch (e: Exception) {
+                                        DebugLogger.e("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-ERR-007",
+                                            "Failed to save file", e)
+                                    }
+                                }
+                            } else {
+                                val dec = try {
+                                    com.jnetaol.securemessenger.crypto.CryptoManager().decrypt(payload, contact.privateKey)
+                                } catch (e: Exception) {
+                                    DebugLogger.w("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-WARN-001",
+                                        "Decrypt failed, storing raw: ${e.message}")
+                                    payload
+                                }
+                                decrypted = dec
+                                isEnc = dec != payload
+                                fileName = null
+                                fileSize = null
                             }
+
                             val message = com.jnetaol.securemessenger.data.model.Message(
                                 id = java.util.UUID.randomUUID().toString(),
                                 contactId = peerId,
                                 content = payload,
                                 originalContent = decrypted,
-                                isEncrypted = decrypted != payload,
+                                isEncrypted = isEnc,
                                 isFromMe = false,
-                                isFile = false,
+                                isFile = isFile,
+                                isNudge = isNudge,
+                                fileName = fileName,
+                                fileSize = fileSize,
                                 isRead = false,
                                 isDelivered = true,
                                 timestamp = System.currentTimeMillis()
@@ -173,6 +226,14 @@ class SecureMessengerApp : Application() {
                             p2pManager?.sendMessage(peerId, "SM_ACK|${message.id}".toByteArray(Charsets.UTF_8))
                             DebugLogger.d("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-004",
                                 "Message received from $peerId, ACK sent")
+
+                            val settings = settingsRepository.settings.value
+                            if (isNudge && settings.vibrationEnabled) {
+                                triggerVibration()
+                            }
+                            if (settings.soundEnabled) {
+                                playNotificationSound()
+                            }
                         }
                     } catch (e: Exception) {
                         DebugLogger.e("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-ERR-003",
@@ -259,6 +320,33 @@ class SecureMessengerApp : Application() {
             "127.0.0.1"
         } catch (e: Exception) {
             "127.0.0.1"
+        }
+    }
+
+    private fun triggerVibration() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vibratorManager.defaultVibrator.vibrate(
+                    VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                vibrator.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
+            }
+        } catch (e: Exception) {
+            DebugLogger.e("SecureMessengerApp", "triggerVibration", "SM-APP-VIB-ERR-001", "Vibration failed", e)
+        }
+    }
+
+    private fun playNotificationSound() {
+        try {
+            val uri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val ringtone = RingtoneManager.getRingtone(this, uri)
+            ringtone.play()
+        } catch (e: Exception) {
+            DebugLogger.e("SecureMessengerApp", "playNotificationSound", "SM-APP-SND-ERR-001", "Sound failed", e)
         }
     }
 }

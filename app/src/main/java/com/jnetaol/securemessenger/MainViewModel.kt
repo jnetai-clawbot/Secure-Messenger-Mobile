@@ -335,25 +335,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     _toastMessage.emit("Contact not found")
                     return@launch
                 }
-                val hasValidKey = contact.publicKey.isNotEmpty() && contact.publicKey.length > 20
                 val fileBytes = file.readBytes()
-                val content = if (hasValidKey) {
-                    try {
-                        val encryptedBytes = cryptoManager.encryptBytes(fileBytes, contact.publicKey)
-                        val storageDir = settingsRepo.getStorageDir(getApplication())
-                        val encryptedFile = File(storageDir, "enc_${file.name}")
-                        encryptedFile.writeBytes(encryptedBytes)
-                        encryptedFile.absolutePath
-                    } catch (_: Exception) {
-                        file.absolutePath
-                    }
-                } else {
-                    file.absolutePath
-                }
+                val hasValidKey = contact.publicKey.isNotEmpty() && contact.publicKey.length > 20
+                val encryptedBytes = if (hasValidKey) {
+                    try { cryptoManager.encryptBytes(fileBytes, contact.publicKey) } catch (_: Exception) { fileBytes }
+                } else { fileBytes }
+                val encoded = java.util.Base64.getEncoder().encodeToString(encryptedBytes)
+
                 val message = Message(
                     id = UUID.randomUUID().toString(),
                     contactId = contactId,
-                    content = content,
+                    content = encoded,
                     originalContent = file.name,
                     isEncrypted = hasValidKey,
                     isFromMe = true,
@@ -365,7 +357,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 chatRepo.insertMessage(message)
                 _toastMessage.emit("File sent")
-                app.p2pManager?.sendMessage(contactId, "FILE|${file.name}|${file.length()}".toByteArray(Charsets.UTF_8))
+                app.p2pManager?.sendMessage(contactId, "FILE|${file.name}|${file.length()}|$encoded".toByteArray(Charsets.UTF_8))
                 DebugLogger.i("MainViewModel", "sendFile", "SM-VM-011", "File sent: ${message.id}")
             } catch (e: Exception) {
                 DebugLogger.e("MainViewModel", "sendFile", "SM-VM-ERR-006", "Failed to send file", e)
