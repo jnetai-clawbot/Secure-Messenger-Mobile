@@ -144,8 +144,8 @@ class SecureMessengerApp : Application() {
                             "Failed to mark delivered", e)
                     }
                 }
-            } else if (msg.startsWith("SM_MSG|")) {
-                val payload = msg.removePrefix("SM_MSG|")
+            } else {
+                val payload = msg
                 applicationScope.launch {
                     try {
                         val contact = contactRepository.getContactByIdSync(peerId)

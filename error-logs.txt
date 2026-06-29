@@ -1,0 +1,46 @@
+[INFO][SM-APP-001][SecureMessengerApp.onCreate] App initializing
+[DEBUG][SM-DB-001][AppDatabase.getInstance] Creating database instance
+[INFO][SM-DB-002][AppDatabase.getInstance] Database instance created
+[INFO][SM-CR-001][ContactRepository.init] ContactRepository initialized
+[INFO][SM-CH-001][ChatRepository.init] ChatRepository initialized
+[INFO][SM-SR-001][SettingsRepository.init] SettingsRepository initialized
+[INFO][SM-CR-001][CryptoManager.init] CryptoManager initialized
+[INFO][SM-IM-001][IdentityManager.init] IdentityManager initialized
+[DEBUG][SM-CR-002][CryptoManager.generateKeyPair] 
+[INFO][SM-CR-003][CryptoManager.generateKeyPair] Key pair generated
+[INFO][SM-IM-003][IdentityManager.generateNewIdentity] New identity: e30e24c5-9269-4708-a095-cd39b20ff1f3, PIN: 905551
+[INFO][SM-APP-002][SecureMessengerApp.onCreate] Core services initialized
+[INFO][SM-P2P-001][P2PManager.init] P2PManager initialized
+[INFO][SM-APP-003][SecureMessengerApp.onCreate] P2P manager initialized and started
+[INFO][SM-APP-004][SecureMessengerApp.onCreate] App initialized successfully
+[INFO][SM-P2P-004][P2PManager.startTCPServer] TCP server on port 42390
+[DEBUG][SM-MA-001][MainActivity.onCreate] 
+[INFO][SM-CR-001][CryptoManager.init] CryptoManager initialized
+[DEBUG][SM-QR-001][QRCodeGenerator.generateQRCode] Generating QR for: SM|e30e24c5-9269-470...
+[INFO][SM-QR-002][QRCodeGenerator.generateQRCode] QR code generated successfully
+[DEBUG][SM-QRS-001][QRScannerActivity.onCreate] 
+[INFO][SM-QRS-002][QRScannerActivity.startCamera] Camera started
+[INFO][SM-QRS-003][QRScannerActivity.scanQRCode] QR scanned: SM|a26d128a-b903-43ba-86a6-4f062d83c5f1|396871|MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyxHcsIsaDoaHT8o19ItPHPo/Wkt71EosRbKvYsaesfulM7CoFsTINPaRWsElFa5S6NhpViOx5s+BwZ/myjQqV34MqGis1kPfMRYuvAaf+/XTTqB3ju+ZBZ5ZVokPOxUy834Ly2WLKJNm4rUuFsqEY3snQbiWFNtYe8wDxvMcj2m1Xj24QzI4/oieokzM7yUEcL6eOAjPQnz0D7s84Sthq+pY+xKHWUhoosIEHM/Ahw+AqC6Y9G2e6Wnu0UEKpKX7mnu18IJHaFrZK+vCu+xPmfZnGbAZIp9M5RlQ1A12AnQH8b9qujLxc7NJV6kgZ7y8PrrimjjudKnYlGyyiGSLeQIDAQAB|192.168.43.178:35819
+[DEBUG][SM-VM-005][MainViewModel.pairWithQr] Pairing with QR: SM|a26d128a-b903-43ba-86a6-4f062d83c5f1|396871|MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyxHcsIsaDoaHT8o19ItPHPo/Wkt71EosRbKvYsaesfulM7CoFsTINPaRWsElFa5S6NhpViOx5s+BwZ/myjQqV34MqGis1kPfMRYuvAaf+/XTTqB3ju+ZBZ5ZVokPOxUy834Ly2WLKJNm4rUuFsqEY3snQbiWFNtYe8wDxvMcj2m1Xj24QzI4/oieokzM7yUEcL6eOAjPQnz0D7s84Sthq+pY+xKHWUhoosIEHM/Ahw+AqC6Y9G2e6Wnu0UEKpKX7mnu18IJHaFrZK+vCu+xPmfZnGbAZIp9M5RlQ1A12AnQH8b9qujLxc7NJV6kgZ7y8PrrimjjudKnYlGyyiGSLeQIDAQAB|192.168.43.178:35819
+[DEBUG][SM-CR-002][CryptoManager.generateKeyPair] 
+[INFO][SM-CR-003][CryptoManager.generateKeyPair] Key pair generated
+[INFO][SM-CR-002][ContactRepository.insertContact] Contact inserted: a26d128a-b903-43ba-86a6-4f062d83c5f1
+[INFO][SM-APP-P2P-002][SecureMessengerApp.onConnectionEstablished] Connected to a26d128a-b903-43ba-86a6-4f062d83c5f1
+[INFO][SM-P2P-008][P2PManager.connectTCP] TCP connected to a26d128a-b903-43ba-86a6-4f062d83c5f1 (myId=e30e24c5-9269-4708-a095-cd39b20ff1f3)
+[DEBUG][SM-QRS-004][QRScannerActivity.onDestroy] 
+[INFO][SM-VM-019][MainViewModel.pairWithQr] Pairing request sent to a26d128a-b903-43ba-86a6-4f062d83c5f1
+[DEBUG][SM-P2P-010][P2PManager.sendMessage] TCP message sent to a26d128a-b903-43ba-86a6-4f062d83c5f1
+[INFO][SM-VM-006][MainViewModel.pairWithQr] QR pairing successful: a26d128a-b903-43ba-86a6-4f062d83c5f1
+[DEBUG][SM-APP-P2P-001][SecureMessengerApp.onMessageReceived] Message from a26d128a-b903-43ba-86a6-4f062d83c5f1
+[INFO][SM-CR-007][ContactRepository.updatePublicKey] Public key updated: a26d128a-b903-43ba-86a6-4f062d83c5f1
+[INFO][SM-APP-P2P-005][SecureMessengerApp.handleP2PMessage] Updated key for existing contact a26d128a-b903-43ba-86a6-4f062d83c5f1
+[DEBUG][SM-VM-001][MainViewModel.selectContact] Selecting contact: a26d128a-b903-43ba-86a6-4f062d83c5f1
+[DEBUG][SM-VM-008][MainViewModel.sendMessage] Sending message to: a26d128a-b903-43ba-86a6-4f062d83c5f1
+[DEBUG][SM-CR-005][CryptoManager.encrypt] Encrypting text
+[DEBUG][SM-CR-004][CryptoManager.generateAESKey] 
+[INFO][SM-CH-002][ChatRepository.insertMessage] Message inserted: 1cfa16e9-a221-451e-a2e7-2022ac0f63d5
+[INFO][SM-VM-009][MainViewModel.sendMessage] Message stored: 1cfa16e9-a221-451e-a2e7-2022ac0f63d5
+[INFO][SM-VM-020][MainViewModel.sendMessage] Message sent via P2P to a26d128a-b903-43ba-86a6-4f062d83c5f1
+[DEBUG][SM-P2P-010][P2PManager.sendMessage] TCP message sent to a26d128a-b903-43ba-86a6-4f062d83c5f1
+[DEBUG][SM-APP-P2P-001][SecureMessengerApp.onMessageReceived] Message from a26d128a-b903-43ba-86a6-4f062d83c5f1
+
