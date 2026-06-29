@@ -19,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class SecureMessengerApp : Application() {
@@ -227,11 +228,13 @@ class SecureMessengerApp : Application() {
                             DebugLogger.d("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-004",
                                 "Message received from $peerId, ACK sent")
 
-                            val appSettings = kotlinx.coroutines.runBlocking { settingsRepository.settings.first() }
-                            if (isNudge && appSettings.vibrationEnabled) {
+                            val prefs = getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
+                            val vibrateEnabled = prefs.getBoolean("vibration_enabled", true)
+                            val soundEnabled = prefs.getBoolean("sound_enabled", true)
+                            if (isNudge && vibrateEnabled) {
                                 triggerVibration()
                             }
-                            if (appSettings.soundEnabled) {
+                            if (soundEnabled) {
                                 playNotificationSound()
                             }
                         }
