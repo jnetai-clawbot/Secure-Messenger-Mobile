@@ -7,10 +7,8 @@ import java.io.*
 import java.net.*
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
-import java.security.MessageDigest
+import java.util.Base64
 import java.util.Random
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
 
 data class P2PConnectionInfo(
     val localAddress: String,
@@ -149,9 +147,10 @@ class P2PManager(
                 var line: String?
                 while (reader.readLine().also { line = it } != null) {
                     val msg = line ?: break
-                    if (msg.startsWith("SM_MSG:") || msg.startsWith("SM_PAIR|")) {
-                        val payload = if (msg.startsWith("SM_MSG:")) msg.removePrefix("SM_MSG:") else msg
-                        onMessageReceived(peerId, payload.toByteArray(Charsets.UTF_8))
+                    if (msg.startsWith("SM_MSG|") || msg.startsWith("SM_PAIR|")) {
+                        val raw = if (msg.startsWith("SM_MSG|")) msg.removePrefix("SM_MSG|") else msg
+                        val payload = try { Base64.getDecoder().decode(raw) } catch (_: Exception) { raw.toByteArray(Charsets.UTF_8) }
+                        onMessageReceived(peerId, payload)
                     } else if (msg == "SM_P2P_BYE") {
                         break
                     }
@@ -214,9 +213,10 @@ class P2PManager(
                         var line: String?
                         while (reader.readLine().also { line = it } != null) {
                             val msg = line ?: break
-                            if (msg.startsWith("SM_MSG:") || msg.startsWith("SM_PAIR|")) {
-                                val payload = if (msg.startsWith("SM_MSG:")) msg.removePrefix("SM_MSG:") else msg
-                                onMessageReceived(peerId, payload.toByteArray(Charsets.UTF_8))
+                            if (msg.startsWith("SM_MSG|") || msg.startsWith("SM_PAIR|")) {
+                                val raw = if (msg.startsWith("SM_MSG|")) msg.removePrefix("SM_MSG|") else msg
+                                val payload = try { Base64.getDecoder().decode(raw) } catch (_: Exception) { raw.toByteArray(Charsets.UTF_8) }
+                                onMessageReceived(peerId, payload)
                             } else if (msg == "SM_P2P_BYE") break
                         }
                     } catch (_: Exception) {}
@@ -253,10 +253,11 @@ class P2PManager(
     fun sendMessage(peerId: String, data: ByteArray) {
         scope.launch {
             try {
+                val encoded = Base64.getEncoder().encodeToString(data)
                 val tcpSocket = activeConnections[peerId]
                 if (tcpSocket != null && tcpSocket.isConnected) {
                     val writer = BufferedWriter(OutputStreamWriter(tcpSocket.getOutputStream()))
-                    writer.write("SM_MSG:${String(data, Charsets.UTF_8)}\n")
+                    writer.write("SM_MSG|$encoded\n")
                     writer.flush()
                     DebugLogger.d("P2PManager", "sendMessage", "SM-P2P-010", "TCP message sent to $peerId")
                     return@launch
@@ -264,7 +265,7 @@ class P2PManager(
 
                 val udpAddr = activeUdpSessions[peerId]
                 if (udpAddr != null) {
-                    sendUDP(udpAddr, "SM_MSG:".toByteArray(Charsets.UTF_8) + data)
+                    sendUDP(udpAddr, "SM_MSG|$encoded".toByteArray(Charsets.UTF_8))
                     DebugLogger.d("P2PManager", "sendMessage", "SM-P2P-011", "UDP message sent to $peerId")
                     return@launch
                 }

@@ -121,6 +121,17 @@ class SecureMessengerApp : Application() {
                                 p2pManager?.sendMessage(peerId, reply.toByteArray(Charsets.UTF_8))
                                 DebugLogger.i("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-003",
                                     "Auto-paired with $remoteId (PIN: $remotePin)")
+                            } else {
+                                contactRepository.updatePublicKey(remoteId, remoteKey)
+                                DebugLogger.i("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-005",
+                                    "Updated key for existing contact $remoteId")
+                            }
+                        } catch (e: Exception) {
+                            DebugLogger.e("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-ERR-002",
+                                "Failed to create contact from pairing", e)
+                        }
+                    }
+                }
             } else if (msg.startsWith("SM_ACK|")) {
                 val messageId = msg.removePrefix("SM_ACK|")
                 applicationScope.launch {
@@ -133,32 +144,29 @@ class SecureMessengerApp : Application() {
                             "Failed to mark delivered", e)
                     }
                 }
-            } else {
-                                contactRepository.updatePublicKey(remoteId, remoteKey)
-                                DebugLogger.i("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-005",
-                                    "Updated key for existing contact $remoteId")
-                            }
-                        } catch (e: Exception) {
-                            DebugLogger.e("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-ERR-002",
-                                "Failed to create contact from pairing", e)
-                        }
-                    }
-                }
-            } else {
-                val payload = msg
+            } else if (msg.startsWith("SM_MSG|")) {
+                val payload = msg.removePrefix("SM_MSG|")
                 applicationScope.launch {
                     try {
                         val contact = contactRepository.getContactByIdSync(peerId)
                         if (contact != null) {
+                            val decrypted = try {
+                                com.jnetaol.securemessenger.crypto.CryptoManager().decrypt(payload, contact.privateKey)
+                            } catch (e: Exception) {
+                                DebugLogger.w("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-WARN-001",
+                                    "Decrypt failed, storing raw: ${e.message}")
+                                payload
+                            }
                             val message = com.jnetaol.securemessenger.data.model.Message(
                                 id = java.util.UUID.randomUUID().toString(),
                                 contactId = peerId,
                                 content = payload,
-                                originalContent = payload,
-                                isEncrypted = false,
+                                originalContent = decrypted,
+                                isEncrypted = decrypted != payload,
                                 isFromMe = false,
                                 isFile = false,
                                 isRead = false,
+                                isDelivered = true,
                                 timestamp = System.currentTimeMillis()
                             )
                             chatRepository.insertMessage(message)
