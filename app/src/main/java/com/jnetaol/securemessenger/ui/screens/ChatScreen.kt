@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Environment
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -449,7 +448,7 @@ fun MessageBubble(message: Message) {
                 colors = CardDefaults.cardColors(containerColor = bubbleColor),
                 modifier = Modifier.clickable {
                     val fileName = message.fileName ?: return@clickable
-                    val downloadsDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "SecureMessenger")
+                    val downloadsDir = File("/storage/emulated/0/Download/SecureMessenger")
                     val file = File(downloadsDir, fileName)
                     if (file.exists()) {
                         try {

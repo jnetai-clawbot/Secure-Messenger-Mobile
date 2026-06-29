@@ -1,7 +1,6 @@
 package com.jnetaol.securemessenger.data.repository
 
 import android.content.Context
-import android.os.Environment
 import com.jnetaol.securemessenger.data.model.AppSettings
 import com.jnetaol.securemessenger.logger.DebugLogger
 import kotlinx.coroutines.flow.Flow
@@ -99,7 +98,7 @@ class SettingsRepository(context: Context) {
             if (!dir.exists()) dir.mkdirs()
             dir
         } else {
-            val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "SecureMessenger")
+            val dir = File("/storage/emulated/0/Download/SecureMessenger")
             if (!dir.exists()) dir.mkdirs()
             dir
         }
