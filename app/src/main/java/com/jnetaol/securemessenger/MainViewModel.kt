@@ -355,9 +355,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 } else { fileBytes }
                 val encoded = java.util.Base64.getEncoder().encodeToString(encryptedBytes)
 
-                val storageDir = settingsRepo.getStorageDir(getApplication())
-                val savedFile = java.io.File(storageDir, file.name)
-                try { savedFile.writeBytes(fileBytes) } catch (_: Exception) {}
+                com.jnetaol.securemessenger.data.FileStorageManager.saveFile(getApplication(), file.name, fileBytes)
 
                 val message = Message(
                     id = UUID.randomUUID().toString(),

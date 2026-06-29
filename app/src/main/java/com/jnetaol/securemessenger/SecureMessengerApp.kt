@@ -182,11 +182,9 @@ class SecureMessengerApp : Application() {
                                             try { com.jnetaol.securemessenger.crypto.CryptoManager().decryptBytes(fileBytes, contact.privateKey) }
                                             catch (_: Exception) { fileBytes }
                                         } else { fileBytes }
-                                        val storageDir = settingsRepository.getStorageDir(this@SecureMessengerApp)
-                                        val savedFile = java.io.File(storageDir, fileName)
-                                        savedFile.writeBytes(decryptedBytes)
+                                        val uri = com.jnetaol.securemessenger.data.FileStorageManager.saveFile(this@SecureMessengerApp, fileName, decryptedBytes)
                                         DebugLogger.i("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-008",
-                                            "File saved: ${savedFile.absolutePath}")
+                                            "File saved: $fileName -> $uri")
                                     } catch (e: Exception) {
                                         DebugLogger.e("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-ERR-007",
                                             "Failed to save file", e)

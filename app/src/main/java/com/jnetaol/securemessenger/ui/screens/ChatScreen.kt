@@ -30,7 +30,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import com.jnetaol.securemessenger.MainViewModel
 import com.jnetaol.securemessenger.data.model.Message
 import java.io.File
@@ -448,11 +447,9 @@ fun MessageBubble(message: Message) {
                 colors = CardDefaults.cardColors(containerColor = bubbleColor),
                 modifier = Modifier.clickable {
                     val fileName = message.fileName ?: return@clickable
-                    val downloadsDir = File("/storage/emulated/0/Download/SecureMessenger")
-                    val file = File(downloadsDir, fileName)
-                    if (file.exists()) {
+                    val uri = com.jnetaol.securemessenger.data.FileStorageManager.getFileUri(context, fileName)
+                    if (uri != null) {
                         try {
-                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                             val intent = Intent(Intent.ACTION_VIEW).apply {
                                 setDataAndType(uri, context.contentResolver.getType(uri) ?: "*/*")
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -462,7 +459,7 @@ fun MessageBubble(message: Message) {
                             Toast.makeText(context, "Cannot open file", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        Toast.makeText(context, "File not found in Downloads", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "File not found", Toast.LENGTH_SHORT).show()
                     }
                 }
             ) {
