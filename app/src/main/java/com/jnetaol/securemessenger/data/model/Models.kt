@@ -27,6 +27,7 @@ data class Message(
     val fileName: String? = null,
     val fileSize: Long? = null,
     val isRead: Boolean = false,
+    val isDelivered: Boolean = false,
     val encryptError: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )

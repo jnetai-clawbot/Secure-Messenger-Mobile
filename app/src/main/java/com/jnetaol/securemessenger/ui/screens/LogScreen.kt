@@ -1,5 +1,9 @@
 package com.jnetaol.securemessenger.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,6 +26,7 @@ import com.jnetaol.securemessenger.logger.DebugLogger
 fun LogScreen(
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     var logs by remember { mutableStateOf(DebugLogger.getLogs()) }
     var showClearDialog by remember { mutableStateOf(false) }
 
@@ -56,6 +62,14 @@ fun LogScreen(
                 },
                 actions = {
                     if (logs.isNotEmpty()) {
+                        IconButton(onClick = {
+                            val text = logs.joinToString("\n")
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("Secure Messenger Logs", text))
+                            Toast.makeText(context, "Logs copied to clipboard", Toast.LENGTH_SHORT).show()
+                        }) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy Logs")
+                        }
                         IconButton(onClick = { showClearDialog = true }) {
                             Icon(Icons.Default.DeleteSweep, contentDescription = "Clear Logs")
                         }

@@ -10,6 +10,9 @@ interface ContactDao {
     @Query("SELECT * FROM contacts ORDER BY createdAt DESC")
     fun getAllContacts(): Flow<List<Contact>>
 
+    @Query("SELECT * FROM contacts ORDER BY createdAt DESC")
+    suspend fun getAllContactsSync(): List<Contact>
+
     @Query("SELECT * FROM contacts WHERE id = :contactId")
     fun getContactById(contactId: String): Flow<Contact?>
 
@@ -60,6 +63,9 @@ interface MessageDao {
 
     @Query("SELECT * FROM messages WHERE contactId = :contactId ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastMessageSync(contactId: String): Message?
+
+    @Query("UPDATE messages SET isDelivered = 1 WHERE id = :messageId")
+    suspend fun markMessageDelivered(messageId: String)
 }
 
 @Dao

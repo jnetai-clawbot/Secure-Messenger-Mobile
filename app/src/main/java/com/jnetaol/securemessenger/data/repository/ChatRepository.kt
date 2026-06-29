@@ -77,4 +77,12 @@ class ChatRepository(
             null
         }
     }
+
+    suspend fun markMessageDelivered(messageId: String) {
+        try {
+            messageDao.markMessageDelivered(messageId)
+        } catch (e: Exception) {
+            DebugLogger.e("ChatRepository", "markMessageDelivered", "SM-CH-ERR-008", "Failed to mark delivered", e)
+        }
+    }
 }

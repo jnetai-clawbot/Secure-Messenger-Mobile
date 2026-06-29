@@ -19,6 +19,15 @@ class ContactRepository(private val contactDao: ContactDao) {
         }
     }
 
+    suspend fun getAllContactsSync(): List<Contact> {
+        return try {
+            contactDao.getAllContactsSync()
+        } catch (e: Exception) {
+            DebugLogger.e("ContactRepository", "getAllContactsSync", "SM-CR-ERR-010", "Failed to get contacts sync", e)
+            emptyList()
+        }
+    }
+
     fun getContactById(contactId: String): Flow<Contact?> {
         return try {
             contactDao.getContactById(contactId)

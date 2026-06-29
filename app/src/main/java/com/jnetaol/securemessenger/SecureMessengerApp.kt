@@ -11,6 +11,7 @@ import com.jnetaol.securemessenger.network.P2PManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class SecureMessengerApp : Application() {
@@ -67,6 +68,10 @@ class SecureMessengerApp : Application() {
             )
             p2pManager?.start()
             DebugLogger.i("SecureMessengerApp", "onCreate", "SM-APP-003", "P2P manager initialized and started")
+            applicationScope.launch {
+                delay(2000)
+                autoConnectToContacts()
+            }
         } catch (e: Exception) {
             DebugLogger.e("SecureMessengerApp", "onCreate", "SM-APP-ERR-002", "P2P init failed (non-fatal)", e)
             p2pManager = null
@@ -116,7 +121,19 @@ class SecureMessengerApp : Application() {
                                 p2pManager?.sendMessage(peerId, reply.toByteArray(Charsets.UTF_8))
                                 DebugLogger.i("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-003",
                                     "Auto-paired with $remoteId (PIN: $remotePin)")
-                            } else {
+            } else if (msg.startsWith("SM_ACK|")) {
+                val messageId = msg.removePrefix("SM_ACK|")
+                applicationScope.launch {
+                    try {
+                        chatRepository.markMessageDelivered(messageId)
+                        DebugLogger.d("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-006",
+                            "ACK received for message $messageId")
+                    } catch (e: Exception) {
+                        DebugLogger.e("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-ERR-005",
+                            "Failed to mark delivered", e)
+                    }
+                }
+            } else {
                                 contactRepository.updatePublicKey(remoteId, remoteKey)
                                 DebugLogger.i("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-005",
                                     "Updated key for existing contact $remoteId")
@@ -145,8 +162,9 @@ class SecureMessengerApp : Application() {
                                 timestamp = System.currentTimeMillis()
                             )
                             chatRepository.insertMessage(message)
+                            p2pManager?.sendMessage(peerId, "SM_ACK|${message.id}".toByteArray(Charsets.UTF_8))
                             DebugLogger.d("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-004",
-                                "Message received from $peerId")
+                                "Message received from $peerId, ACK sent")
                         }
                     } catch (e: Exception) {
                         DebugLogger.e("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-ERR-003",
@@ -157,6 +175,82 @@ class SecureMessengerApp : Application() {
         } catch (e: Exception) {
             DebugLogger.e("SecureMessengerApp", "handleP2PMessage", "SM-APP-P2P-ERR-004",
                 "Message handling failed", e)
+        }
+    }
+
+    private suspend fun autoConnectToContacts() {
+        try {
+            val contacts = contactRepository.getAllContactsSync()
+            val myId = identityManager.identityId
+            for (contact in contacts) {
+                if (contact.isBlocked) continue
+                val addr = getContactAddress(contact.id)
+                if (addr != null) {
+                    p2pManager?.connectToPeer(contact.id, myId, addr.first, addr.second)
+                    DebugLogger.d("SecureMessengerApp", "autoConnect", "SM-APP-P2P-007",
+                        "Auto-connecting to ${contact.id}")
+                }
+            }
+        } catch (e: Exception) {
+            DebugLogger.e("SecureMessengerApp", "autoConnect", "SM-APP-P2P-ERR-006",
+                "Auto-connect failed", e)
+        }
+    }
+
+    private fun getContactAddress(contactId: String): Pair<String, Int>? {
+        return try {
+            val p2pInfo = p2pManager?.getConnectionInfo()
+            if (p2pInfo != null && p2pInfo.publicPort > 0) {
+                Pair(p2pInfo.publicAddress, p2pInfo.publicPort)
+            } else {
+                val localPort = p2pManager?.getLocalPort() ?: 0
+                if (localPort > 0) {
+                    val ip = getGlobalIPv6() ?: getLocalIPv4()
+                    Pair(ip, localPort)
+                } else null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun getGlobalIPv6(): String? {
+        return try {
+            val interfaces = java.net.NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                if (iface.isLoopback || !iface.isUp) continue
+                val addresses = iface.inetAddresses
+                while (addresses.hasMoreElements()) {
+                    val addr = addresses.nextElement()
+                    if (addr is java.net.Inet6Address && !addr.isLoopbackAddress
+                        && !addr.isLinkLocalAddress && !addr.isSiteLocalAddress) {
+                        return addr.hostAddress?.split("%")?.firstOrNull()
+                    }
+                }
+            }
+            null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun getLocalIPv4(): String {
+        return try {
+            val interfaces = java.net.NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                val addresses = iface.inetAddresses
+                while (addresses.hasMoreElements()) {
+                    val addr = addresses.nextElement()
+                    if (!addr.isLoopbackAddress && addr is java.net.Inet4Address) {
+                        return addr.hostAddress ?: "127.0.0.1"
+                    }
+                }
+            }
+            "127.0.0.1"
+        } catch (e: Exception) {
+            "127.0.0.1"
         }
     }
 }

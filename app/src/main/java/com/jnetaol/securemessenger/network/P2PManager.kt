@@ -183,9 +183,9 @@ class P2PManager(
         }
     }
 
-    suspend fun connectToPeer(peerId: String, address: String, port: Int): Boolean {
+    suspend fun connectToPeer(peerId: String, myId: String, address: String, port: Int): Boolean {
         return try {
-            connectTCP(peerId, address, port)
+            connectTCP(peerId, myId, address, port)
         } catch (e: Exception) {
             DebugLogger.e("P2PManager", "connectToPeer", "SM-P2P-ERR-005", "Connection failed", e)
             onConnectionFailed(peerId, e.message ?: "Unknown error")
@@ -193,14 +193,14 @@ class P2PManager(
         }
     }
 
-    private suspend fun connectTCP(peerId: String, address: String, port: Int): Boolean = withContext(Dispatchers.IO) {
+    private suspend fun connectTCP(peerId: String, myId: String, address: String, port: Int): Boolean = withContext(Dispatchers.IO) {
         try {
             val socket = Socket()
             socket.connect(InetSocketAddress(address, port), 10000)
             activeConnections[peerId] = socket
 
             val writer = BufferedWriter(OutputStreamWriter(socket.getOutputStream()))
-            writer.write("SM_P2P_HELLO:$peerId\n")
+            writer.write("SM_P2P_HELLO:$myId\n")
             writer.flush()
 
             val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
@@ -208,7 +208,7 @@ class P2PManager(
             val response = reader.readLine()
             if (response == "SM_P2P_ACK") {
                 onConnectionEstablished(peerId)
-                DebugLogger.i("P2PManager", "connectTCP", "SM-P2P-008", "TCP connected to $peerId")
+                DebugLogger.i("P2PManager", "connectTCP", "SM-P2P-008", "TCP connected to $peerId (myId=$myId)")
                 scope.launch {
                     try {
                         var line: String?

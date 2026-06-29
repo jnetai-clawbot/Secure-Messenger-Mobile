@@ -218,9 +218,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val host = addrParts[0]
                     val port = addrParts.getOrNull(1)?.toIntOrNull() ?: 0
                     if (port > 0) {
-                        app.p2pManager?.connectToPeer(peerId, host, port)
-                        delay(800)
                         val myId = identityManager.identityId
+                        app.p2pManager?.connectToPeer(peerId, myId, host, port)
+                        delay(800)
                         val myPin = identityManager.pinCode
                         val myKey = keyPair.publicKey
                         val pairMsg = "SM_PAIR|$myId|$myPin|$myKey"
