@@ -126,37 +126,15 @@ fun AboutScreen(
 
             Button(
                 onClick = {
-                    scope.launch {
-                        isChecking = true
-                        updateMessage = null
-                        try {
-                            val result = withContext(Dispatchers.IO) {
-                                checkForUpdate()
-                            }
-                            updateMessage = result
-                        } catch (e: Exception) {
-                            updateMessage = "Error checking for updates: ${e.message}"
-                        }
-                        isChecking = false
-                    }
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/jnetai-clawbot/Secure-Messenger-Mobile/releases"))
+                    context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                enabled = !isChecking
+                shape = RoundedCornerShape(12.dp)
             ) {
-                if (isChecking) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Checking...")
-                } else {
-                    Icon(Icons.Default.SystemUpdate, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Check for Updates")
-                }
+                Icon(Icons.Default.SystemUpdate, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Check for Updates")
             }
 
             updateMessage?.let { msg ->
