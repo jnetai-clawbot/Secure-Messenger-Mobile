@@ -1,10 +1,16 @@
 package com.jnetaol.securemessenger.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -54,8 +60,15 @@ fun ChatScreen(
     ) { uri: Uri? ->
         uri?.let {
             try {
+                var originalName = "file"
+                context.contentResolver.query(it, null, null, null, null)?.use { cursor ->
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex >= 0 && cursor.moveToFirst()) {
+                        originalName = cursor.getString(nameIndex)
+                    }
+                }
                 val inputStream = context.contentResolver.openInputStream(it)
-                val tempFile = File(context.cacheDir, "temp_upload_${System.currentTimeMillis()}")
+                val tempFile = File(context.cacheDir, originalName)
                 inputStream?.use { input ->
                     tempFile.outputStream().use { output ->
                         input.copyTo(output)
@@ -376,9 +389,12 @@ fun ChatScreen(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(message: Message) {
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    val dateTimeFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
+    val context = LocalContext.current
     val isFromMe = message.isFromMe
     val alignment = if (isFromMe) Alignment.End else Alignment.Start
     val bubbleColor = if (isFromMe)
@@ -467,7 +483,15 @@ fun MessageBubble(message: Message) {
                     bottomStart = if (isFromMe) 16.dp else 4.dp,
                     bottomEnd = if (isFromMe) 4.dp else 16.dp
                 ),
-                colors = CardDefaults.cardColors(containerColor = bubbleColor)
+                colors = CardDefaults.cardColors(containerColor = bubbleColor),
+                modifier = Modifier.combinedClickable(
+                    onClick = {
+                        val text = message.originalContent.ifEmpty { message.content }
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Secure Messenger Message", text))
+                        Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                    }
+                )
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
@@ -516,7 +540,7 @@ fun MessageBubble(message: Message) {
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        timeFormat.format(Date(message.timestamp)),
+                        dateTimeFormat.format(Date(message.timestamp)),
                         fontSize = 10.sp,
                         color = textColor.copy(alpha = 0.5f),
                         modifier = Modifier.align(Alignment.End)

@@ -189,6 +189,22 @@ class CryptoManager {
         }
     }
 
+    fun getPublicKeyFromPrivate(privateKeyStr: String): String {
+        return try {
+            val keyFactory = java.security.KeyFactory.getInstance("RSA")
+            val privKey = keyFactory.generatePrivate(
+                java.security.spec.PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKeyStr))
+            )
+            val spec = keyFactory.getKeySpec(privKey, java.security.spec.RSAPrivateCrtKeySpec::class.java)
+            val pubSpec = java.security.spec.RSAPublicKeySpec(spec.modulus, spec.publicExponent)
+            val pubKey = keyFactory.generatePublic(pubSpec)
+            Base64.getEncoder().encodeToString(pubKey.encoded)
+        } catch (e: Exception) {
+            DebugLogger.e("CryptoManager", "getPublicKeyFromPrivate", "SM-CR-ERR-008", "Failed to derive public key", e)
+            throw SecurityException("Failed to derive public key: ${e.message}", e)
+        }
+    }
+
     private fun intToBytes(value: Int): ByteArray {
         return byteArrayOf(
             (value shr 24).toByte(),
