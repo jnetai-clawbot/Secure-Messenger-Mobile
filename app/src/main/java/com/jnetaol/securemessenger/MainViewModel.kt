@@ -201,10 +201,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val p2pAddr = parts.getOrNull(4) ?: ""
 
                 val existingContact = contactRepo.getContactByIdSync(peerId)
+                var myKeyForPair: String? = null
                 if (existingContact != null) {
                     contactRepo.updatePublicKey(peerId, peerPublicKey)
                     val displayName = if (peerPin.isNotEmpty()) "PIN: $peerPin" else existingContact.displayName
                     contactRepo.updateDisplayName(peerId, displayName)
+                    myKeyForPair = try { cryptoManager.getPublicKeyFromPrivate(existingContact.privateKey) }
+                        catch (_: Exception) { null }
                     DebugLogger.i("MainViewModel", "pairWithQr", "SM-VM-021", "Re-paired existing contact: $peerId")
                 } else {
                     val keyPair = cryptoManager.generateKeyPair()
@@ -219,6 +222,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         createdAt = System.currentTimeMillis()
                     )
                     contactRepo.insertContact(contact)
+                    myKeyForPair = keyPair.publicKey
                 }
 
                 if (p2pAddr.isNotEmpty()) {
@@ -230,12 +234,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         app.p2pManager?.connectToPeer(peerId, myId, host, port)
                         delay(800)
                         val myPin = identityManager.pinCode
-                        val myKey = if (existingContact != null) {
-                            try { cryptoManager.getPublicKeyFromPrivate(existingContact.privateKey) }
-                            catch (_: Exception) { cryptoManager.generateKeyPair().publicKey }
-                        } else {
-                            cryptoManager.generateKeyPair().publicKey
-                        }
+                        val myKey = myKeyForPair ?: cryptoManager.generateKeyPair().publicKey
                         val pairMsg = "SM_PAIR|$myId|$myPin|$myKey"
                         app.p2pManager?.sendMessage(peerId, pairMsg.toByteArray(Charsets.UTF_8))
                         DebugLogger.i("MainViewModel", "pairWithQr", "SM-VM-019", "Pairing request sent to $peerId")
