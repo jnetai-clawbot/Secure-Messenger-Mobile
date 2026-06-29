@@ -12,8 +12,8 @@ android {
         applicationId = "com.jnetaol.securemessenger"
         minSdk = 26
         targetSdk = 34
-        versionCode = 10024
-        versionName = "1.0.24"
+        versionCode = 10025
+        versionName = "1.0.25"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86") }
     }
